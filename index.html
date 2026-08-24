@@ -121,7 +121,8 @@ tbody td{padding:9px 11px;vertical-align:middle}
   <div id="topbar">
     <h2 id="page-title">Outreach Queue</h2>
     <span class="api-status api-local" id="api-status">● Local mode</span>
-    <button class="btn btn-ghost btn-sm" onclick="syncAll()" id="sync-btn">⟳ Refresh</button>
+    <span id="last-sync" style="font-size:11px;color:#888"></span>
+    <button class="btn btn-ghost btn-sm" onclick="refreshShared()" id="sync-btn">⟳ Refresh</button>
   </div>
   <div id="page"></div>
 </div>
@@ -426,7 +427,10 @@ async function pushToNeon(tab,r){
 
 // Every status change goes through here: saved locally, and shared with the team
 // as soon as the status address is set in Settings.
-async function saveToRemote(tab,row){ pushToNeon(tab,row); return {success:true}; }
+async function saveToRemote(tab,row){
+  await pushToNeon(tab,row);      // share it with the team
+  return {success:true};
+}
 async function deleteFromRemote(tab,id){ return {success:true}; }
 async function loadFromRemote(tab){ return getData(tab); }
 
@@ -1185,10 +1189,33 @@ async function doLogin(){
   await startApp();
 }
 
+// Pull the team's latest updates without disturbing what you are doing
+let _refreshing=false;
+async function refreshShared(silent){
+  if(_refreshing||!TOKEN) return;
+  _refreshing=true;
+  try{
+    const ok=await loadFromNeon();
+    if(ok){
+      render();
+      const el=document.getElementById('last-sync');
+      if(el) el.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }
+  }catch(e){}
+  _refreshing=false;
+}
+function startAutoRefresh(){
+  setInterval(()=>refreshShared(true), 120000);          // every 2 minutes
+  document.addEventListener('visibilitychange',()=>{     // and whenever you return to the tab
+    if(!document.hidden) refreshShared(true);
+  });
+}
+
 async function startApp(){
   const ok=await loadFromNeon();
-  if(!ok){ await ensureAugustLoaded(); }   // fall back to the built-in snapshot
+  if(!ok){ await ensureAugustLoaded(); }   // fall back if the database is unreachable
   apiStat(); render();
+  startAutoRefresh();
 }
 
 // ══════════ INIT ══════════

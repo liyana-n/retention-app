@@ -334,17 +334,57 @@ const SNAPSHOT_DATE='12 Aug 2026';
 // ══════════ NEON — shared team database ══════════
 const AUTH_URL='https://ep-rough-violet-azb5iw3s.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth';
 const REST_URL='https://ep-rough-violet-azb5iw3s.apirest.c-3.ap-southeast-1.aws.neon.tech/neondb/rest/v1';
-let TOKEN=null, USER=null;
+// TOKEN is the short-lived JWT the database accepts. SESS is the longer-lived
+// sign-in session, which is what we exchange for a fresh JWT when one expires.
+let TOKEN=null, USER=null, SESS=null, JWT_AT=0;
 function dataApi(){ return REST_URL; }
 function statusApi(){ return REST_URL; }
 
-function saveToken(t,u){TOKEN=t;USER=u;try{localStorage.setItem('ret_tok',t||'');localStorage.setItem('ret_usr',JSON.stringify(u||null));}catch(e){}}
-function loadToken(){try{TOKEN=localStorage.getItem('ret_tok')||null;USER=JSON.parse(localStorage.getItem('ret_usr')||'null');}catch(e){}}
+function saveToken(t,u,s){
+  TOKEN=t;USER=u; if(s!==undefined)SESS=s; if(!t)JWT_AT=0;
+  try{localStorage.setItem('ret_tok',t||'');
+      localStorage.setItem('ret_usr',JSON.stringify(u||null));
+      localStorage.setItem('ret_sess',SESS||'');}catch(e){}
+}
+function loadToken(){try{
+  TOKEN=localStorage.getItem('ret_tok')||null;
+  USER=JSON.parse(localStorage.getItem('ret_usr')||'null');
+  SESS=localStorage.getItem('ret_sess')||null;
+  JWT_AT=0;   // force a refresh on first use — the stored JWT has almost certainly expired
+}catch(e){}}
+
+// The database will not accept the sign-in token directly. It needs a JWT,
+// which Neon returns in the set-auth-jwt header of get-session. These expire
+// after about 15 minutes, so we fetch a new one whenever ours is getting old.
+async function fetchJwt(){
+  try{
+    const h={'Accept':'application/json'};
+    if(SESS) h['Authorization']='Bearer '+SESS;
+    const r=await fetch(AUTH_URL+'/get-session',{credentials:'include',headers:h});
+    const j=r.headers.get('set-auth-jwt')||r.headers.get('Set-Auth-Jwt');
+    if(j){ JWT_AT=Date.now(); return j; }
+  }catch(e){}
+  return null;
+}
 
 async function authFetch(path,opts={}){
+  if(Date.now()-JWT_AT>600000){ const t=await fetchJwt(); if(t) saveToken(t,USER); }
   const o={...opts,headers:{'Content-Type':'application/json','Accept':'application/json',...(opts.headers||{})}};
   if(TOKEN)o.headers['Authorization']='Bearer '+TOKEN;
-  return fetch(REST_URL+path,o);
+  let r=await fetch(REST_URL+path,o);
+  if(r.status===401||r.status===403){          // token went stale mid-session
+    const t=await fetchJwt();
+    if(t){ saveToken(t,USER); o.headers['Authorization']='Bearer '+t; r=await fetch(REST_URL+path,o); }
+  }
+  return r;
+}
+async function afterAuth(email,d){
+  const sess=d.token||(d.session&&d.session.token)||null;
+  SESS=sess;
+  const jwt=await fetchJwt();
+  if(!jwt) return {ok:false,error:'Signed in, but could not get a database token. If your browser blocks third-party cookies, allow them for this site and try again.'};
+  saveToken(jwt,d.user||{email},sess);
+  return {ok:true};
 }
 async function signIn(email,password){
   try{
@@ -352,8 +392,7 @@ async function signIn(email,password){
       headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok) return {ok:false,error:d.message||'Wrong email or password.'};
-    saveToken(d.token||(d.session&&d.session.token)||null,d.user||{email});
-    return {ok:true};
+    return await afterAuth(email,d);
   }catch(e){ return {ok:false,error:'Could not reach the server.'}; }
 }
 async function signUp(email,password,name){
@@ -362,11 +401,10 @@ async function signUp(email,password,name){
       headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,name:name||email})});
     const d=await r.json().catch(()=>({}));
     if(!r.ok) return {ok:false,error:d.message||'Could not create that account.'};
-    saveToken(d.token||(d.session&&d.session.token)||null,d.user||{email});
-    return {ok:true};
+    return await afterAuth(email,d);
   }catch(e){ return {ok:false,error:'Could not reach the server.'}; }
 }
-function signOut(){saveToken(null,null);location.reload();}
+function signOut(){saveToken(null,null,null);location.reload();}
 
 // Only people on the approved list see any merchant data
 async function checkAccess(){
@@ -1182,7 +1220,7 @@ async function doLogin(){
   const allowed=await checkAccess();
   if(!allowed){
     msg.style.color='var(--red)';
-    msg.textContent='That account is not on the approved list yet. Ask Liy to add '+email+'.';
+    msg.textContent='Signed in, but '+email+' is not on the approved list yet. Ask Liy to add it.';
     saveToken(null,null); return;
   }
   document.getElementById('login-screen').style.display='none';

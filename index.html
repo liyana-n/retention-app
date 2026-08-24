@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyStore · Merchant Retention v2</title>
+<style>
+:root{--navy:#1A3C5E;--navy-d:#0D2035;--navy-m:#2A5580;--navy-l:#EBF2FA;
+--accent:#E8A020;--red:#C0392B;--red-l:#FDECEA;--orange:#E67E22;--orange-l:#FFF3E0;
+--green:#27AE60;--green-l:#EAFAF1;--purple:#7D3C98;--purple-l:#F4ECF7;
+--grey:#F4F6F8;--grey-d:#666;--border:#DDE3EA;--text:#222;--white:#fff;--sidebar:220px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--grey);color:var(--text);display:flex;height:100vh;overflow:hidden}
+#sidebar{width:var(--sidebar);background:var(--navy-d);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.brand h1{font-size:14px;font-weight:700;color:#fff}
+.brand p{font-size:10px;color:rgba(255,255,255,.45);margin-top:3px}
+.nav-group{padding:14px 10px 6px}
+.nav-group-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:rgba(255,255,255,.35);text-transform:uppercase;padding:0 8px;margin-bottom:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:var(--accent);color:#fff;font-weight:700}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;min-width:18px;text-align:center}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+#topbar h2{font-size:17px;font-weight:700;color:var(--navy);flex:1}
+.api-status{font-size:11px;padding:4px 10px;border-radius:12px;font-weight:600}
+.api-connected{background:var(--green-l);color:#145A32}
+.api-disconnected{background:var(--red-l);color:var(--red)}
+.api-local{background:var(--orange-l);color:#7B4A00}
+#page{flex:1;overflow-y:auto;padding:24px}
+.cards-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.card{background:#fff;border-radius:10px;padding:16px 20px;flex:1;min-width:130px}
+.card-num{font-size:30px;font-weight:800;color:var(--navy);line-height:1}
+.card-label{font-size:11px;color:var(--grey-d);margin-top:5px}
+.card-red .card-num{color:var(--red)}.card-orange .card-num{color:var(--orange)}.card-green .card-num{color:var(--green)}
+.section{background:#fff;border-radius:10px;margin-bottom:18px;overflow:hidden}
+.section-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.section-head h3{font-size:14px;font-weight:700;color:var(--navy);flex:1}
+.section-body{padding:18px}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy-m)}
+.btn-ghost{background:var(--grey);color:var(--grey-d);border:1px solid var(--border)}
+.btn-sm{padding:5px 12px;font-size:12px}.btn-xs{padding:3px 8px;font-size:11px}
+.b-wa{background:#DCF8E7;color:#0E7A5F;border:1.5px solid #25D366}
+.b-gm{background:#FDECEA;color:#C5221F;border:1.5px solid #E8A9A5}
+.b-sent{background:var(--grey);color:#555;border:2px solid var(--border)}
+.b-sent.done{background:var(--green-l);color:#145A32;border-color:#145A32}
+.chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;vertical-align:middle}
+.c-high{background:var(--red-l);color:var(--red)}.c-med{background:var(--orange-l);color:#7D3C00}
+.c-ok{background:var(--green-l);color:#145A32}.c-watch{background:var(--navy-l);color:var(--navy)}
+.c-crit{background:#4A235A;color:#fff}.c-urg{background:var(--red);color:#fff}
+.c-plan{background:var(--purple-l);color:var(--purple)}.c-freq{background:var(--orange-l);color:#7D3C00}
+.qcard{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;background:#fff}
+.qcard.sent{opacity:.45}
+.qnum{width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.qname{font-size:15px;font-weight:800;color:var(--navy)}
+.qmeta{font-size:12px;color:#777;margin:4px 0 9px}
+.offer-note{background:var(--orange-l);border:1px dashed var(--accent);border-radius:8px;padding:6px 10px;font-size:11px;color:#7D3C00;margin-bottom:9px}
+.slot{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 8px}
+.progress{height:8px;background:var(--grey);border-radius:4px;overflow:hidden;margin:6px 0 2px}
+.progress i{display:block;height:100%;background:var(--green);transition:width .3s}
+table{width:100%;border-collapse:collapse;min-width:760px;font-size:12px}
+thead tr{background:var(--navy)}
+thead th{color:#fff;padding:9px 11px;text-align:left;font-weight:600;white-space:nowrap;font-size:11px}
+tbody tr{border-bottom:1px solid #F0F0F0}
+tbody tr:hover{background:#F8FAFC}
+tbody td{padding:9px 11px;vertical-align:middle}
+.tbl-wrap{overflow-x:auto}
+.filter-chip{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--grey-d)}
+.filter-chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.select-inline{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;background:#fff;cursor:pointer;color:var(--text)}
+.input-inline{border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text);width:130px}
+.alert{border-radius:8px;padding:12px 16px;font-size:12px;margin-bottom:14px;border-left:4px solid;line-height:1.6}
+.alert-blue{background:var(--navy-l);color:var(--navy);border-color:var(--navy)}
+.alert-yellow{background:var(--orange-l);color:#7B4A00;border-color:var(--orange)}
+.alert-green{background:var(--green-l);color:#145A32;border-color:var(--green)}
+.empty{text-align:center;padding:44px 24px;color:#aaa}
+.empty .big{font-size:34px;margin-bottom:8px}.empty p{font-size:13px}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+#modal-overlay.open{display:flex}
+#modal{background:#fff;border-radius:12px;width:560px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:24px}
+.modal-head{display:flex;align-items:center;margin-bottom:18px}
+.modal-head h3{flex:1;font-size:16px;font-weight:700;color:var(--navy)}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--grey-d)}
+.form-grid{display:grid;gap:12px;margin-bottom:14px}
+.form-2{grid-template-columns:1fr 1fr}.form-3{grid-template-columns:1fr 1fr 1fr}
+.form-group label{font-size:11px;font-weight:700;color:#555;display:block;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;background:#fff;font-family:inherit;color:var(--text)}
+.form-group textarea{resize:vertical;min-height:60px}
+.tmpl-body{background:#F8FAFC;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12px;white-space:pre-wrap;line-height:1.7;color:#333}
+.setup-step{background:#fff;border-radius:10px;padding:18px 22px;margin-bottom:14px;border-left:5px solid var(--navy)}
+.setup-step h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px}
+.setup-step p{font-size:13px;color:#555;line-height:1.6;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand"><h1>Merchant Retention</h1><p>EasyStore · v2 · Design 1</p></div>
+  <div class="nav-group">
+    <div class="nav-group-label">Daily Work</div>
+    <div class="nav-item active" onclick="go('queue')" id="nav-queue"><span>📤</span> Outreach Queue <span class="nav-badge" id="q-badge" style="background:var(--accent)">0</span></div>
+    <div class="nav-item" onclick="go('dashboard')" id="nav-dashboard"><span>📊</span> Dashboard</div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Merchant Lists</div>
+    <div class="nav-item" onclick="go('risk')" id="nav-risk"><span>🛡</span> Save At-Risk</div>
+    <div class="nav-item" onclick="go('winback')" id="nav-winback"><span>🔁</span> Recover Churned</div>
+    <div class="nav-item" onclick="go('escalations')" id="nav-escalations"><span>🚨</span> Escalations <span class="nav-badge" id="esc-badge">0</span></div>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-label">Config</div>
+    <div class="nav-item" onclick="go('templates')" id="nav-templates"><span>✉️</span> Templates</div>
+    <div class="nav-item" onclick="go('settings')" id="nav-settings"><span>⚙️</span> Settings</div>
+    <div class="nav-item" onclick="signOut()"><span>🚪</span> Sign out</div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <h2 id="page-title">Outreach Queue</h2>
+    <span class="api-status api-local" id="api-status">● Local mode</span>
+    <button class="btn btn-ghost btn-sm" onclick="syncAll()" id="sync-btn">⟳ Refresh</button>
+  </div>
+  <div id="page"></div>
+</div>
+
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--navy-d);z-index:500;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:32px;width:380px;max-width:92vw">
+    <h1 style="font-size:19px;color:var(--navy);margin-bottom:4px">Merchant Retention</h1>
+    <p style="font-size:12px;color:#888;margin-bottom:18px">EasyStore · Success &amp; Activation</p>
+    <div class="form-group"><label>Work email</label>
+      <input id="li-email" type="email" placeholder="you@easystore.co" autocomplete="username"></div>
+    <div class="form-group"><label>Password</label>
+      <input id="li-pass" type="password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="li-name-wrap" class="form-group" style="display:none"><label>Your name</label>
+      <input id="li-name" placeholder="e.g. Amira Liyana"></div>
+    <div id="li-msg" style="font-size:12px;color:var(--red);min-height:18px;margin-bottom:10px"></div>
+    <button class="btn btn-navy" style="width:100%;justify-content:center" onclick="doLogin()" id="li-btn">Sign in</button>
+    <p style="font-size:11.5px;color:#888;margin-top:14px;text-align:center">
+      <a href="#" onclick="toggleSignup();return false" id="li-toggle" style="color:var(--navy)">First time? Create your account</a></p>
+    <p style="font-size:11px;color:#aaa;margin-top:12px;line-height:1.5">
+      Access is limited to approved team members. Merchant contact details are personal data — please do not share or export them.</p>
+  </div>
+</div>
+
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div id="modal">
+    <div class="modal-head"><h3 id="modal-title">Edit</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ══════════ STATE ══════════
+const TODAY = new Date();
+let _memSettings=null; const _memData={};
+let currentPage='queue';
+let myAM = '';
+let wbSearch='', wbPage=1;
+// Each page keeps its own sort. true = oldest churn first (default)
+const SORT={queue:true, winback:true};
+function toggleSort(key,fn){
+  SORT[key]=!SORT[key];
+  if(key==='winback')wbPage=1;
+  const g=globalThis[fn]; if(typeof g==='function')g();
+}
+function sortBtn(key,fn){
+  return `<button class="btn btn-ghost btn-sm" onclick="toggleSort('${key}','${fn}')" title="Click to flip the order on this page">
+    ${SORT[key]?'↑ Oldest first':'↓ Newest first'}</button>`;
+}
+let rkSearch='', rkPage=1;
+let escSearch='';
+// ══════════ ONE-BOX FILTER ENGINE ══════════
+// Pick a field → pick a value → it becomes a removable chip. Stack as many as needed.
+const FILT={winback:{Show:'active'},risk:{Show:'active'},esc:{}};
+const PEND={winback:'',risk:'',esc:''};
+const DEFAULTS={winback:{Show:'active'},risk:{Show:'active'},esc:{}};
+const uniq=(rows,key)=>[...new Set(rows.map(r=>r[key]).filter(Boolean))].sort().map(a=>[a,a]);
+
+const FIELDS={
+  winback:{
+    'Reason':{o:()=>[['price','Price'],['product','Product Gap'],['usability','Hard to use'],['competitor','Competitor'],['seasonal','Seasonal'],['closed','Business closed'],['no-sales','No sales'],['silent','No reason given']],
+              m:(r,v)=>r['Segment']===v},
+    'Plan'  :{o:()=>PLAN_OPTS.slice(1), m:(r,v)=>planKey(r['Plan Type'])===v},
+    'Status':{o:()=>[['not-started','Not started'],['email-sent','Contacted'],['call-booked','Call booked'],['no-response','No response'],['declined','Declined']],
+              m:(r,v)=>(r['Outreach Status']||'not-started')===v},
+    'Window':{o:()=>[['in','Within 90 days'],['out','Over 90 days']],
+              m:(r,v)=>{const d=daysSince(r['Churn Date']);return v==='in'?d<=90:d>90;}},
+    'AM'    :{o:rows=>uniq(rows,'AM'), m:(r,v)=>r['AM']===v},
+    'Show'  :{o:()=>[['active','Active only'],['renewed','Renewed only'],['all','Everything']],
+              m:(r,v)=>{const won=r['Win-Back Outcome']==='Won back'||r._status==='resubscribed';
+                        return v==='all'?true:v==='renewed'?won:!won;}},
+  },
+  risk:{
+    'Tier'  :{o:()=>[['urgent','Urgent'],['critical','Critical'],['high','High'],['medium','Medium'],['watch','Watch'],['healthy','Healthy']],
+              m:(r,v)=>r._tier===v},
+    'Plan'  :{o:()=>PLAN_OPTS.slice(1), m:(r,v)=>planKey(r['Plan Type'])===v},
+    'AM'    :{o:rows=>uniq(rows,'AM'), m:(r,v)=>r['AM']===v},
+    'Show'  :{o:()=>[['active','Active only'],['renewed','Renewed only'],['all','Everything']],
+              m:(r,v)=>v==='all'?true:v==='renewed'?r['Outcome']==='Recovered':r['Outcome']!=='Recovered'},
+  },
+  esc:{
+    'Status'  :{o:()=>[['Open','Open'],['In Progress','In Progress'],['Resolved','Resolved']], m:(r,v)=>r['Status']===v},
+    'Severity':{o:()=>[['Critical','Critical'],['High','High'],['Medium','Medium'],['Low','Low']], m:(r,v)=>r['Severity']===v},
+    'Assigned':{o:rows=>uniq(rows,'Assigned To'), m:(r,v)=>r['Assigned To']===v},
+  },
+};
+
+function applyFilters(tab,rows){
+  const defs=FIELDS[tab],act=FILT[tab];
+  return rows.filter(r=>Object.keys(act).every(f=>!act[f]||!defs[f]||defs[f].m(r,act[f])));
+}
+function _rerender(tab,fn){
+  if(tab==='winback')wbPage=1; if(tab==='risk')rkPage=1;      // always jump back to page 1
+  const g=(typeof globalThis!=='undefined'&&globalThis[fn])||(typeof window!=='undefined'&&window[fn]);
+  if(typeof g==='function')g();
+}
+function setPend(tab,f,fn){PEND[tab]=f;_rerender(tab,fn);}
+function addFilt(tab,f,v,fn){if(v){FILT[tab][f]=v;PEND[tab]='';}_rerender(tab,fn);}
+function delFilt(tab,f,fn){
+  if(DEFAULTS[tab][f]!==undefined)FILT[tab][f]=DEFAULTS[tab][f];else delete FILT[tab][f];
+  _rerender(tab,fn);
+}
+function clearFilt(tab,fn){FILT[tab]=JSON.parse(JSON.stringify(DEFAULTS[tab]));PEND[tab]='';_rerender(tab,fn);}
+
+// Renders: [Filter by ▼] [value ▼] [search] [Clear]  +  chips underneath
+function filterBar(tab,rows,fn,searchVar,searchVal,searchId){
+  const defs=FIELDS[tab],pend=PEND[tab];
+  const label=(f,v)=>{const d=defs[f];if(!d)return v;const o=d.o(rows).find(x=>x[0]===v);return o?o[1]:v;};
+  const chips=Object.keys(FILT[tab])
+    .filter(f=>FILT[tab][f]&&FILT[tab][f]!==DEFAULTS[tab][f])
+    .map(f=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border-radius:14px;padding:3px 6px 3px 11px;font-size:11px;font-weight:600">
+        ${f}: ${label(f,FILT[tab][f])}
+        <span onclick="delFilt('${tab}','${f}','${fn}')" title="Remove"
+          style="cursor:pointer;background:rgba(255,255,255,.25);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:11px">×</span>
+      </span>`).join(' ');
+  const valueBox=pend&&defs[pend]
+    ? `<select class="select-inline" style="min-width:150px" autofocus onchange="addFilt('${tab}','${pend}',this.value,'${fn}')">
+         <option value="">Choose ${pend}…</option>
+         ${defs[pend].o(rows).map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}
+       </select>`
+    : '';
+  return `<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <b style="font-size:12px;color:var(--navy)">🔎 Filter by</b>
+      <select class="select-inline" style="min-width:130px" onchange="setPend('${tab}',this.value,'${fn}')">
+        <option value="">Select…</option>
+        ${Object.keys(defs).map(f=>`<option value="${f}"${pend===f?' selected':''}>${f}</option>`).join('')}
+      </select>
+      ${valueBox}
+      <input id="${searchId}" class="input-inline" style="width:150px;margin-left:auto" placeholder="🔍 name / ID"
+        value="${searchVal}" oninput="${searchVar}=this.value;${fn}()">
+      ${(chips||searchVal)?`<button class="btn btn-ghost btn-xs" onclick="clearFilt('${tab}','${fn}');${searchVar}='';${fn}()">Clear all</button>`:''}
+    </div>
+    ${chips?`<div style="padding:8px 18px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+       <span style="font-size:11px;color:#888">Showing only:</span>${chips}</div>`:''}`;
+}
+const PAGE_SIZE=50, BATCH=5;
+
+// ── Test-account data from console (until engineers link the console live) ──
+const TEST_CONTACTS = {
+  '1301201': {phone:'60137873077', email:'bobbysansupply@gmail.com', planType:'monthly', renewal:'2026-08-22', status:'resubscribed', note:'Re-subscribed 22 Jul — auto Won Back'},
+  '1424695': {phone:'60142256973', email:'adam@servetify.com',       planType:'monthly', renewal:'', status:'churned'},
+  '1371896': {phone:'60122075844', email:'ashariies.marie@gmail.com',planType:'yearly',  renewal:'2027-01-19', status:'active'},
+  '1356610': {phone:'60124071195', email:'inquiry@stcmall.asia',     planType:'monthly', renewal:'', status:'churned'},
+  '116201':  {phone:'',            email:'bellezza.sofia@gmail.com', planType:'monthly', renewal:'', status:'churned', freq:true},
+};
+
+// ── August 2026 churned merchants pulled from console (reports/retention/churn 2026-08) ──
+const AUG_DATA=[
+['9418','sicurez2','sicurezsteven@gmail.com','60169790810','','Standard',1,'2026-08-06','Amira Liyana'],
+['10263','cyc','cyewchoy@hotmail.com','60192391673','','Lite',36,'2026-08-09','Amira Liyana'],
+['102219','aqualegendconceptshop','aqualegendconceptshop@gmail.com','601137643200','','Standard',1,'2026-08-11','Amira Liyana'],
+['110121','thegluck','zheng_112@live.com','601155075220','','Standard',1,'2026-08-01','Tan Ye'],
+['239012','jellyfishckw','mailfussyshop@gmail.com','','','Standard',1,'2026-08-01','Astrid Chen'],
+['241601','joyfoodness','joyfoodness28@gmail.com','','','Lite',1,'2026-08-07','Amira Liyana'],
+['273607','techx','thibanc@gmail.com','60183698826','','Standard',1,'2026-08-10','Astrid Chen'],
+['314103','handbagoriusa','handbagori.usa@gmail.com','60163519818','','Standard',12,'2026-08-11','Amira Liyana'],
+['324000','jiawenlolcollection7864','flora_wen84@hotmail.com','','','Lite',36,'2026-08-07','Amira Liyana'],
+['340311','topboxshop','uma.hana@hotmail.com','','','Standard',24,'2026-08-04','Astrid Chen'],
+['342234','goq4280','goqmalaysia@gmail.com','60164105668','','Lite',12,'2026-08-02','Amira Liyana'],
+['349991','m-clinic-happy','medissasenawang@gmail.com','','','Lite',1,'2026-08-02','Amira Liyana'],
+['358769','jacktiong','jack@unitedfusion.com.my','0128519091','','Standard',36,'2026-08-08','Amira Liyana'],
+['379799','hstoysstore','youyi0919@gmail.com','60103993344','','Standard',12,'2026-08-03','Choo Zhe Hong'],
+['380867','krislynseah','fashionistav2016@gmail.com','','','Standard',36,'2026-08-09','Amira Liyana'],
+['385074','hoshiluna','hoshi.luna@hotmail.com','','','Standard',24,'2026-08-02','Kian Ming'],
+['387507','contact6704','contact@philipphantom.com','','','Standard',1,'2026-08-08','Choo Zhe Hong'],
+['590924','bymindyliew','mindyliew32@gmail.com','','','Lite',1,'2026-08-11','Sing Yee'],
+['621563','feryahmad','chrisbellamalaysia@gmail.com','','','Standard',1,'2026-08-08','Choo Zhe Hong'],
+['634475','furxuryhealthypetfood','furxury@gmail.com','601137784778','','Essential',12,'2026-08-11','Sook Yan'],
+['757874','goodniteoutlet','goodniteoutlet@gmail.com','60105138441','','Business',1,'2026-08-05','Amira Liyana'],
+['775858','curtains2u','smarttechmy88@gmail.com','60196958338','','Lite',12,'2026-08-01','Amira Liyana'],
+['818833','vmartonlinegrocery','vmart.onlinegrocer@gmail.com','60199666338','','Standard',1,'2026-08-05','Amira Liyana'],
+['828669','khalsomhijab','khalsom.hijab@gmail.com','60182103123','','Standard',1,'2026-08-08','Choo Zhe Hong'],
+['945128','mizzaraabaya','mizzarashop@gmail.com','60174685441','','Standard',1,'2026-08-11','Kian Ming'],
+['992168','tiyascarves','hellotiyascarves@gmail.com','60134774309','','Essential',24,'2026-08-02','Amira Liyana'],
+['1043472','jwboutiqueusa','urbanstylenterprise@gmail.com','60167071378','','Standard',1,'2026-08-02','Kian Ming'],
+['1189069','nurulmall','ceo.nurulatiqahholdingsdnbhd@gmail.com','60189114885','','Growth',12,'2026-08-03','Kian Ming'],
+['1267600','httsk8t','httsk8t@gmail.com','60126110913','','Lite',36,'2026-08-11','Amira Liyana'],
+['1280583','noisemongers','noisemongersrecs@gmail.com','60162891970','','Lite',1,'2026-08-04','Choo Zhe Hong'],
+['1284581','missuugirl','uugirlmiss@gmail.com','60167010923','','Lite',1,'2026-08-10','Kian Ming'],
+['1305109','cupofpups','cupofpups.my@gmail.com','60149618618','','Lite',1,'2026-08-09','Astrid Chen'],
+['1319060','healez','healezhq@gmail.com','1117748149','','Business',36,'2026-08-03','Choo Zhe Hong'],
+['1321476','atheenamy','help.atheena@gmail.com','60102153350','','Lite',36,'2026-08-08','Kian Ming'],
+['1338922','dzafar','dzafarenterprise@gmail.com','60177750469','','Standard',1,'2026-08-05','Astrid Chen'],
+['1339584','gadisluarbiasa','gadisluarbiasa2024@gmail.com','60192214471','','Standard',1,'2026-08-10','Choo Zhe Hong'],
+['1358572','naturemoriscents','naturemori@gmail.com','','','Standard',12,'2026-08-01','Choo Zhe Hong'],
+['1358790','densports','densports.kbr@gmail.com','601137577782','','Growth',24,'2026-08-09','Astrid Chen'],
+['1359712','dofaonline','dofawork22@gmail.com','60142310488','','Essential',24,'2026-08-02','Astrid Chen'],
+['1361088','hairfaerie','hair.faeriee@gmail.com','60126939187','','Standard',12,'2026-08-06','Astrid Chen'],
+['1361397','gazotradingservices','gazoservices@gmail.com','60126882208','','Essential',24,'2026-08-11','Amira Liyana'],
+['1376108','ladychillco','sales.001.aim@gmail.com','60164461601','','Business',1,'2026-08-03','Astrid Chen'],
+['1382796','violent','violnt22@gmail.com','60176295030','','Standard',1,'2026-08-10','Khor June Yih'],
+['1410633','neerviateliersg','neervisarees@gmail.com','601116730116','','Standard',1,'2026-08-11','Amira Liyana'],
+['1412204','nuhea','nuheasupply@gmail.com','60132090904','','Standard',12,'2026-08-03','Isabelle Wong'],
+['1412297','thegrowthsmiths','karenonline321@gmail.com','60126220528','','Standard',12,'2026-08-04','Amira Liyana'],
+['1412814','sinisterclub','sinisterclubs@gmail.com','60135467600','','Standard',1,'2026-08-02','Amira Liyana'],
+['1413774','loineebigplus','loineebigplus@gmail.com','601137645887','','Business',12,'2026-08-06','Choo Zhe Hong'],
+['1426184','leboutiquebebe','khadijahrohizat@gmail.com','60164399760','','Standard',1,'2026-08-07','Kian Ming'],
+['1427942','cemaraclassic','cemaraclassic@gmail.com','601133499845','','Standard',1,'2026-08-01','Choo Zhe Hong'],
+['1432461','puzzel','rajamuhammadfaizuddin@gmail.com','60199581282','','Standard',1,'2026-08-04','Choo Zhe Hong'],
+['1434765','giftz4all','nazzerh@giftz4all.com','6591476451','','Business',1,'2026-08-05','Cavan Koh'],
+['1436487','asbr','asbrbundle@icloud.com','60133437302','','Business',1,'2026-08-04','Cavan Koh'],
+['1438438','vvmood','vivimood5617@gmail.com','6588220102','','Standard',1,'2026-08-07','Cavan Koh']
+];
+function cycleToPlanType(c){return c>=36?'3years':c>=24?'2years':c>=12?'yearly':'monthly';}
+
+// Build a winback row from an AUG_DATA entry
+function augRow(a){return {
+  'ID':uuid(),'Store ID':a[0],'Account Name':CONSOLE_NAMES[a[0]]||a[1],
+  'Segment':a[4]||'silent','Churn Date':a[7],'Days Since Churn':daysSince(a[7]),
+  'AM':a[8]||'','Outreach Status':'not-started','Last Contact':'','Win-Back Outcome':'—',
+  'Survey Text (col R)':'','Notes':'From console churn report, Aug 2026',
+  'Phone':a[3],'Email':a[2],'Plan Type':cycleToPlanType(a[6]),'Plan Tier':a[5],
+  'Updated At':new Date().toISOString(),
+};}
+
+// Make sure the current month's churns are always present — they are the live
+// working set. Runs on every load; only adds what is genuinely missing.
+async function ensureAugustLoaded(){
+  const wb=getData('winback');
+  const have=new Set(wb.map(r=>String(r['Store ID']).trim()));
+  const missing=AUG_DATA.filter(a=>!have.has(a[0]));
+  if(!missing.length) return 0;
+  const rows=missing.map(augRow);
+  setData('winback',[...rows,...wb]);
+  return rows.length;
+}
+// Write the console store names into the Google Sheet permanently
+async function syncConsoleNames(){
+  const st=document.getElementById('name-status');
+  let fixed=0;
+  for(const tab of ['winback','risk']){
+    const rows=getData(tab);
+    for(const r of rows){
+      const nm=CONSOLE_NAMES[String(r['Store ID']||'').trim()];
+      if(nm && r['Account Name']!==nm){
+        r['Account Name']=nm; r['Updated At']=new Date().toISOString();
+        await saveToRemote(tab,r); fixed++;
+        if(st)st.textContent='Updating… '+fixed;
+      }
+    }
+    setData(tab,rows);
+  }
+  if(st)st.textContent=fixed?('✓ '+fixed+' names written to the sheet'):'✓ All names already match the console';
+  render();
+}
+function getSettings(){
+  try{const s=localStorage.getItem('ret2_settings'); if(s) return JSON.parse(s);}catch(e){}
+  return _memSettings||(_memSettings={dataApi:'',statusApi:'',amList:['Amira Liyana','Astrid Chen','Choo Zhe Hong','Kian Ming','Tan Ye','Cavan Koh','Sook Yan','Sing Yee','Isabelle Wong','Khor June Yih'],crispBcc:'',myAM:''});
+}
+function saveSettings(s){_memSettings=JSON.parse(JSON.stringify(s));try{localStorage.setItem('ret2_settings',JSON.stringify(s));}catch(e){}}
+function saveMyAM(){const s=getSettings();s.myAM=myAM;saveSettings(s);}
+function getData(k){if(_memData[k])return _memData[k];try{const v=localStorage.getItem('ret2_'+k);if(v)return _memData[k]=JSON.parse(v);}catch(e){}return(_memData[k]=[]);}
+function setData(k,a){_memData[k]=a;try{localStorage.setItem('ret2_'+k,JSON.stringify(a));}catch(e){}}
+function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function todayKey(){return TODAY.toISOString().slice(0,10);}
+function getSentLog(){const k='ret2_sent_'+todayKey();try{return JSON.parse(localStorage.getItem(k)||'{}');}catch(e){return _memData[k]||{};}}
+function setSentLog(l){const k='ret2_sent_'+todayKey();_memData[k]=l;try{localStorage.setItem(k,JSON.stringify(l));}catch(e){}}
+
+// ══════════ DATA LAYER ══════════
+// The app is self-contained. Merchant data comes from the built-in console
+// snapshot; the AM's own edits (status, notes, renewed, mark-sent) are kept in
+// this browser. No Google Sheet involved.
+//
+// WHEN THE LIVE FEED IS READY: paste the addresses into Settings > Connect to
+// console. No code change needed.
+const APP_VERSION='3.0';
+const APP_UPDATED='18 Aug 2026';
+const SNAPSHOT_DATE='12 Aug 2026';
+
+// ══════════ NEON — shared team database ══════════
+const AUTH_URL='https://ep-rough-violet-azb5iw3s.neonauth.c-3.ap-southeast-1.aws.neon.tech/neondb/auth';
+const REST_URL='https://ep-rough-violet-azb5iw3s.apirest.c-3.ap-southeast-1.aws.neon.tech/neondb/rest/v1';
+let TOKEN=null, USER=null;
+function dataApi(){ return REST_URL; }
+function statusApi(){ return REST_URL; }
+
+function saveToken(t,u){TOKEN=t;USER=u;try{localStorage.setItem('ret_tok',t||'');localStorage.setItem('ret_usr',JSON.stringify(u||null));}catch(e){}}
+function loadToken(){try{TOKEN=localStorage.getItem('ret_tok')||null;USER=JSON.parse(localStorage.getItem('ret_usr')||'null');}catch(e){}}
+
+async function authFetch(path,opts={}){
+  const o={...opts,headers:{'Content-Type':'application/json','Accept':'application/json',...(opts.headers||{})}};
+  if(TOKEN)o.headers['Authorization']='Bearer '+TOKEN;
+  return fetch(REST_URL+path,o);
+}
+async function signIn(email,password){
+  try{
+    const r=await fetch(AUTH_URL+'/sign-in/email',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) return {ok:false,error:d.message||'Wrong email or password.'};
+    saveToken(d.token||(d.session&&d.session.token)||null,d.user||{email});
+    return {ok:true};
+  }catch(e){ return {ok:false,error:'Could not reach the server.'}; }
+}
+async function signUp(email,password,name){
+  try{
+    const r=await fetch(AUTH_URL+'/sign-up/email',{method:'POST',credentials:'include',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,name:name||email})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) return {ok:false,error:d.message||'Could not create that account.'};
+    saveToken(d.token||(d.session&&d.session.token)||null,d.user||{email});
+    return {ok:true};
+  }catch(e){ return {ok:false,error:'Could not reach the server.'}; }
+}
+function signOut(){saveToken(null,null);location.reload();}
+
+// Only people on the approved list see any merchant data
+async function checkAccess(){
+  if(!TOKEN) return false;
+  try{
+    const r=await authFetch('/allowed_users?select=email,am_name');
+    if(!r.ok) return false;
+    const rows=await r.json().catch(()=>[]);
+    if(rows.length&&rows[0].am_name){myAM=rows[0].am_name;const s=getSettings();s.myAM=myAM;saveSettings(s);}
+    return rows.length>0;
+  }catch(e){ return false; }
+}
+
+async function loadFromNeon(){
+  try{
+    const [mr,sr]=await Promise.all([authFetch('/merchants?select=*'),authFetch('/merchant_status?select=*')]);
+    if(!mr.ok) return false;
+    const merchants=await mr.json();
+    const statuses=sr.ok?await sr.json():[];
+    const smap={}; statuses.forEach(s=>smap[String(s.store_id)]=s);
+    const wb=[],rk=[];
+    merchants.forEach(m=>{
+      const s=smap[String(m.store_id)]||{};
+      const row={'ID':'n'+m.store_id,'Store ID':String(m.store_id),
+        'Account Name':m.store_name||'','Email':m.email||'','Phone':m.phone||'',
+        'AM':m.account_manager||'','Plan Type':m.plan_cycle||'','Plan Tier':m.plan_tier||'',
+        'Churn Date':String(m.churn_date||'').slice(0,10),'Renewal Date':String(m.expiry_date||'').slice(0,10),
+        'GMV Change %':m.gmv_change_pct,'Orders Change %':m.orders_change_pct,
+        'Days Since Login':m.days_since_login||'','MRR':m.mrr||'',
+        'Segment':s.churn_reason||'silent','Churn Reason Detail':s.churn_detail||'',
+        'Outreach Status':s.outreach_status||'not-started',
+        'Win-Back Outcome':s.outcome||'—','MRR Recovered':s.mrr_recovered||'','MRR Lost':s.mrr_lost||'',
+        'Last Contact':String(s.last_contact||'').slice(0,10),'Notes':s.notes||'',
+        'Updated At':s.updated_at||''};
+      if(m.is_expired) wb.push(row); else rk.push(row);
+    });
+    setData('winback',wb); setData('risk',rk);
+    return true;
+  }catch(e){ return false; }
+}
+
+async function pushToNeon(tab,r){
+  if(!TOKEN) return false;
+  try{
+    const body={store_id:String(r['Store ID']),list:tab,
+      outreach_status:r['Outreach Status']||r['Intervention Status']||null,
+      outcome:(r['Win-Back Outcome']==='—'?null:r['Win-Back Outcome'])||r['Outcome']||null,
+      churn_reason:r['Segment']||null,churn_detail:r['Churn Reason Detail']||null,
+      mrr_recovered:Number(r['MRR Recovered'])||null,mrr_lost:Number(r['MRR Lost'])||null,
+      last_contact:r['Last Contact']||r['Last Action Date']||null,
+      renewed_date:r['Renewed Date']||null,notes:r['Notes']||null,
+      updated_by:myAM||(USER&&USER.email)||'',updated_at:new Date().toISOString()};
+    const res=await authFetch('/merchant_status?on_conflict=store_id',
+      {method:'POST',headers:{'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)});
+    return res.ok;
+  }catch(e){ return false; }
+}
+
+// Every status change goes through here: saved locally, and shared with the team
+// as soon as the status address is set in Settings.
+async function saveToRemote(tab,row){ pushToNeon(tab,row); return {success:true}; }
+async function deleteFromRemote(tab,id){ return {success:true}; }
+async function loadFromRemote(tab){ return getData(tab); }
+
+function apiStat(){
+  const el=document.getElementById('api-status'); if(!el) return;
+  const live=!!TOKEN;
+  el.className='api-status '+(live?'api-connected':'api-local');
+  el.textContent=live?('● Shared · '+((USER&&USER.email)||'signed in')):'● Offline snapshot';
+  el.title=live?'Connected to the team database — your updates are shared':'Not signed in';
+}
+async function syncAll(){
+  const b=document.getElementById('sync-btn'); if(b)b.textContent='⟳ Refreshing…';
+  const live=await fetchLive();
+  if(live&&live.length){
+    // Live feed present — merge in anything new, keep the AM's own progress
+    const wb=getData('winback'); const have=new Set(wb.map(r=>String(r['Store ID'])));
+    const add=live.filter(x=>!have.has(String(x.store_id))).map(x=>({
+      'ID':uuid(),'Store ID':String(x.store_id),'Account Name':x.name||'','Segment':'silent',
+      'Churn Date':String(x.expired_at||'').slice(0,10),'AM':x.am||'','Outreach Status':'not-started',
+      'Win-Back Outcome':'—','Phone':x.phone||'','Email':x.email||'','Plan Type':x.plan||'',
+      'Notes':'From live feed','Updated At':new Date().toISOString()}));
+    if(add.length) setData('winback',[...add,...wb]);
+  }else{
+    await ensureAugustLoaded();                    // top up from the built-in snapshot
+  }
+  if(b)b.textContent='⟳ Refresh';
+  apiStat(); render();
+}
+
+// ── Official console store names (pulled live from /@api/v2/stores/{id}/insight) ──
+const CONSOLE_NAMES={"1211": "3yjewellerys", "18419": "qcoffeevending", "116201": "bellezzasofia", "188098": "safensound", "232031": "tamingwild", "238275": "scentflix", "242949": "bubblenaramy", "247489": "secretfloralmy", "274281": "nurainmasli", "316370": "youka", "316456": "tenshabeadsmy", "324693": "haylahijab", "336555": "goodgamesports", "355985": "resumemalaysia", "361670": "affiqjr", "405111": "zabellhijab", "405631": "comfortiehome", "491507": "faerybeauty", "524180": "saltxpaperstationerygifts", "598595": "comlitosstore", "603108": "christinetee", "622116": "happystore-3", "640568": "wearejrobertfarms", "641352": "psainifatimah", "647170": "collabsubangjaya", "649890": "prestasipublication", "696596": "revtosolutions", "735959": "joannechanchengwei", "749953": "livingjiaen", "756046": "bigmolebag", "784198": "earssoda", "810929": "kamesyuwa", "811899": "dsuridsuri", "821355": "meowmeowexpo", "832391": "drbabyoutlet", "836170": "softmediaenterprise", "859583": "zhaoningtang", "862415": "bestitech-2", "873877": "chunkaichew", "904767": "laziz", "919277": "ohsemgarden", "958944": "psainzack", "966583": "meenies", "992234": "ccinfine", "1056466": "sherisse", "1103212": "kot", "1129107": "qqislime", "1168844": "pawfectcraftsco", "1178450": "beaconagent", "1184018": "nictronagriculture", "1227471": "paperunni", "1269123": "babytag", "1286701": "krtkl", "1288957": "lebloomsflorist", "1301201": "bobbysansupply", "1317191": "omrayprojector", "1321789": "fmbrothershouse", "1327640": "mindbridge", "1328228": "anisofficialempire", "1331625": "xlimixorilemonjingling", "1335263": "museskinbeauty", "1335880": "jadilifesolutionsdnbhd", "1336538": "hellogorgeouswardrobe", "1337234": "hoaperfumes", "1338883": "seamoriginals", "1341164": "vivianbeautyentreprise", "1345637": "elevenks", "1356610": "stcmall", "1367014": "winwinfood", "1367777": "dollycons", "1368091": "puccysupply", "1368142": "bbeautying", "1368721": "zenalchemyspa", "1368825": "foodhubsupplysdnbhd", "1369637": "petjilla", "1369996": "craftsparkleco", "1370566": "chfreshmart", "1371896": "ashariiesbymariedashani", "1372703": "niceskinstore", "1372801": "absmy", "1373313": "dreamyboutiquee", "1375707": "thedailybunga", "1379043": "wgrocer", "1382338": "urbanbloom", "1407797": "baktailoring", "1409152": "pintelekskbandaranggerik", "1409999": "guarsanjimachineryhardware", "1412938": "ambicasvastra", "1413534": "aikamatcha", "1414418": "intanpayung", "1414709": "iensyder", "1414945": "thekaiastudio", "1415046": "TheJasmine", "1416950": "moonlight98", "1417271": "melone", "1417534": "empressserenityempire", "1417771": "mummystorehq", "1418424": "maxet", "1423388": "novaphoneenterprise", "1424547": "thejasminehijab", "1424695": "taym", "1424795": "scmummy", "1424918": "ptorientaledgegamestore", "1425493": "fantom", "1425695": "miniluxuryfragrance", "1425902": "poorand", "1426133": "monoloopmalaysia", "1426157": "gingerlandsuteramalljohorbahru", "1426406": "jssglobal", "1427115": "hsbox", "1428021": "thuwaibahgold", "1428220": "ayampenyetbest", "1428564": "pyhealthcare", "189587": "om3rakl", "1189069": "nurulmall", "1320210": "JOYMI OFFICIAL", "1359712": "dofaonline", "992168": "tiyascarves", "1319060": "healez", "1439786": "Fatimaluxe", "1431867": "CYHSTORE", "1427942": "cemaraclassic", "1412814": "sinisterclub", "1353775": "MAFA OUD", "1337681": "MS 7 EMPIRE", "1026615": "Made In KL", "698527": "cahaya pelangi boutique", "135564": "Butik Ellmaya", "242334": "BIJOU BY LISAN", "1358572": "naturemoriscents", "49470": "AZ T-STUDIO CHEST BINDER STORE", "1376108": "ladychillco", "1043472": "jwboutiqueusa", "110121": "thegluck", "239012": "jellyfishckw", "1412204": "nuhea", "1412088": "Kiat Kee Confectionery Centre", "379799": "hstoysstore", "385074": "hoshiluna", "349991": "m-clinic-happy", "1147": "Equipzone", "342234": "goq4280", "775858": "curtains2u", "9418": "sicurez2", "10263": "cyc", "102219": "aqualegendconceptshop", "241601": "joyfoodness", "273607": "techx", "314103": "handbagoriusa", "324000": "jiawenlolcollection7864", "340311": "topboxshop", "358769": "jacktiong", "380867": "krislynseah", "387507": "contact6704", "590924": "bymindyliew", "621563": "feryahmad", "634475": "furxuryhealthypetfood", "757874": "goodniteoutlet", "818833": "vmartonlinegrocery", "828669": "khalsomhijab", "945128": "mizzaraabaya", "1267600": "httsk8t", "1280583": "noisemongers", "1284581": "missuugirl", "1305109": "cupofpups", "1321476": "atheenamy", "1338922": "dzafar", "1339584": "gadisluarbiasa", "1358790": "densports", "1361088": "hairfaerie", "1361397": "gazotradingservices", "1382796": "violent", "1410633": "neerviateliersg", "1412297": "thegrowthsmiths", "1413774": "loineebigplus", "1426184": "leboutiquebebe", "1432461": "puzzel", "1434765": "giftz4all", "1436487": "asbr", "1438438": "vvmood"};
+
+// ── Official console CONTACTS for all 113 merchants: "email|phone" (owner account preferred) ──
+const CONSOLE_CONTACTS={"1211": "3yjewellery@gmail.com|60122875511", "18419": "shirly@visolux.com.my|", "116201": "bellezza.sofia@gmail.com|", "188098": "marketing@safensound.com.my|", "232031": "yeewon.ng@taming-wild.com|", "238275": "scentflixmy@gmail.com|60129791137", "242949": "bubblenara.my@gmail.com|", "247489": "secretfloral.my@gmail.com|601156255567", "274281": "nurain.masli@gmail.com|601162167901", "316370": "david@albertwines.com.my|", "316456": "tenshabeadsmy@gmail.com|", "324693": "jeffryzainnn@gmail.com|", "336555": "goodgame_rs@yahoo.com|", "355985": "hervattenmalaysia@gmail.com|601123323881", "361670": "mr.aisarwafiy@gmail.com|60139039922", "405111": "nabilaatiqah7@yahoo.com|60187893301", "405631": "comfortiehome@gmail.com|601165634205", "491507": "faery.inquiries@gmail.com|60166192697", "524180": "hello@saltxpaper.com|60162602524", "598595": "comlitos@outlook.com|", "603108": "technologiesmaxima@gmail.com|", "622116": "happytoysonlineshop96@gmail.com|", "640568": "wearejrobertfarms@gmail.com|60124514118", "641352": "ps.ainifatimah@gmail.com|60196616163", "647170": "collab.o.rationss15@gmail.com|", "649890": "orders.prestasi@gmail.com|60122663909", "696596": "revto.solutions@gmail.com|", "735959": "joannechan612@gmail.com|", "749953": "woondymoondy@gmail.com|", "756046": "bigmole3@gmail.com|0193583684", "784198": "xinjie779@gmail.com|60169696779", "810929": "kamesyuwa@gmail.com|60123171714", "811899": "dsurihq@gmail.com|60198888082", "821355": "zh.lo@live.com.my|60192800863", "832391": "atsirah.aisyah@gmail.com|0134737452", "836170": "lkevent.designer@gmail.com|60199887168", "859583": "ningtang7@gmail.com|", "862415": "bestitech1899@gmail.com|60167172833", "873877": "ajidosauces@gmail.com|0167038713", "904767": "admin@lazizpatin.com|6092902256", "919277": "ohsemgarden@gmail.com|60124162717", "958944": "ps.ainzack@gmail.com|60172410753", "966583": "ainafini.work@gmail.com|60142343359", "992234": "infinemarketing2110@gmail.com|", "1056466": "sherisse.bags@gmail.com|60182050228", "1103212": "tawana.muchatuta@gmail.com|60176565432", "1129107": "yuqicutel@gmail.com|60183829550", "1168844": "pawfectcraftsnco@gmail.com|60178449376", "1178450": "it.dept@beaconmart.com.my|6016-9687647", "1184018": "adamahamadsalleh@gmail.com|601116379232", "1227471": "paperunni89@gmail.com|60173235349", "1269123": "angelcmf@gmail.com|60125880969", "1286701": "krtkl2014@gmail.com|60182744814", "1288957": "leblooms.florist@gmail.com|60182920560", "1301201": "bobbysansupply@gmail.com|60137873077", "1317191": "omrayprojector@gmail.com|6597330397", "1321789": "dausmohamad@gmail.com|60177690316", "1327640": "kikenai97@gmail.com|18601606083", "1328228": "anis.official.empire@gmail.com|601110050884", "1331625": "jinglinghong1220@gmail.com|60162157098", "1335263": "kean.chew@museskin.co|60122015679", "1335880": "faatiha_sales@jadi.my|182398388", "1336538": "grgs.wardrobe@gmail.com|601127270051", "1337234": "farhanayusof126@gmail.com|60197339193", "1338883": "victor@sneakerlah.com|60133835267", "1341164": "vivianyow101@gmail.com|6593722981", "1345637": "sales.kissis@gmail.com|199878506", "1356610": "inquiry@stcmall.asia|60124071195", "1367014": "jytan@win2food.com.my|601156389195", "1367777": "jojoxinyi0608@gmail.com|601127219194", "1368091": "puccysupply0@gmail.com|60173365283", "1368142": "cadieling@gmail.com|60165269319", "1368721": "hello@zenalchemyspa.com|60196099489", "1368825": "hubsupplyfood@gmail.com|601140770711", "1369637": "petjilla@gmail.com|60128060925", "1369996": "hsp2k2@hotmail.com|60136938626", "1370566": "chapchiaphong.online@gmail.com|60124752496", "1371896": "ashariies.marie@gmail.com|60122075844", "1372703": "9skin.niceskin@gmail.com|601126124668", "1372801": "alan.bakers.supply@gmail.com|60129850168", "1373313": "dreamyboutique1387@gmail.com|60139121224", "1375707": "thedailybunga@gmail.com|601137613186", "1379043": "danny.wong@wgrocer.com|60162381197", "1382338": "chris_tck@hotmail.com|60124289000", "1407797": "baktailoringhq@gmail.com|60108103884", "1409152": "p.intelek9936@gmail.com|60162051266", "1409999": "guarsanji.mh@gmail.com|60185740118", "1412938": "ambicas888@gmail.com|60102508672", "1413534": "helloaikamatcha@gmail.com|60166636894", "1414418": "intanpayungmy@gmail.com|60199668317", "1414709": "izzataiman9999@gmail.com|601124132127", "1414945": "hello.thekaiastudio@gmail.com|601119589144", "1415046": "ijmalakbar17@gmail.com|601120799165", "1416950": "haileygoh5596@gmail.com|60175995596", "1417271": "melone.my@outlook.com|601133398511", "1417534": "empressserenityempire@gmail.com|60137674654", "1417771": "jazamjunaideen@gmail.com|601114280948", "1418424": "muhamadmerican17@gmail.com|60174012904", "1423388": "ch.chui@me.com|601159911163", "1424547": "farhan.anna.no1@gmail.com|601153900034", "1424695": "adam@servetify.com|60142256973", "1424795": "wresources.my@gmail.com|60143343194", "1424918": "tanlehua98@gmail.com|6281268771988", "1425493": "madfantom19@gmail.com|60179692411", "1425695": "miniluxuryfragrance.my@gmail.com|60123359803", "1425902": "babedoga@gmail.com|601161616126", "1426133": "monoloopm@gmail.com|601110191610", "1426157": "lkevent.designer@gmail.com|60199887168", "1426406": "jgstudio004@gmail.com|60186624120", "1427115": "ericfaye880056@gmail.com|60174128137", "1428021": "thuwaibahgold.official@gmail.com|601156517550", "1428220": "minenetworkg@gmail.com|60123448508", "1428564": "account1@pauyuan.com.my|60165248797", "9418": "sicurezsteven@gmail.com|60169790810", "10263": "cyewchoy@hotmail.com|60192391673", "102219": "aqualegendconceptshop@gmail.com|601137643200", "110121": "zheng_112@live.com|601155075220", "239012": "mailfussyshop@gmail.com|", "241601": "joyfoodness28@gmail.com|", "273607": "thibanc@gmail.com|60183698826", "314103": "handbagori.usa@gmail.com|60163519818", "324000": "flora_wen84@hotmail.com|", "340311": "uma.hana@hotmail.com|", "342234": "goqmalaysia@gmail.com|60164105668", "349991": "medissasenawang@gmail.com|", "358769": "jack@unitedfusion.com.my|0128519091", "379799": "youyi0919@gmail.com|60103993344", "380867": "fashionistav2016@gmail.com|", "385074": "hoshi.luna@hotmail.com|", "387507": "contact@philipphantom.com|", "590924": "mindyliew32@gmail.com|", "621563": "chrisbellamalaysia@gmail.com|", "634475": "furxury@gmail.com|601137784778", "757874": "goodniteoutlet@gmail.com|60105138441", "775858": "smarttechmy88@gmail.com|60196958338", "818833": "vmart.onlinegrocer@gmail.com|60199666338", "828669": "khalsom.hijab@gmail.com|60182103123", "945128": "mizzarashop@gmail.com|60174685441", "992168": "hellotiyascarves@gmail.com|60134774309", "1043472": "urbanstylenterprise@gmail.com|60167071378", "1189069": "ceo.nurulatiqahholdingsdnbhd@gmail.com|60189114885", "1267600": "httsk8t@gmail.com|60126110913", "1280583": "noisemongersrecs@gmail.com|60162891970", "1284581": "uugirlmiss@gmail.com|60167010923", "1305109": "cupofpups.my@gmail.com|60149618618", "1319060": "healezhq@gmail.com|1117748149", "1321476": "help.atheena@gmail.com|60102153350", "1338922": "dzafarenterprise@gmail.com|60177750469", "1339584": "gadisluarbiasa2024@gmail.com|60192214471", "1358572": "naturemori@gmail.com|", "1358790": "densports.kbr@gmail.com|601137577782", "1359712": "dofawork22@gmail.com|60142310488", "1361088": "hair.faeriee@gmail.com|60126939187", "1361397": "gazoservices@gmail.com|60126882208", "1376108": "sales.001.aim@gmail.com|60164461601", "1382796": "violnt22@gmail.com|60176295030", "1410633": "neervisarees@gmail.com|601116730116", "1412204": "nuheasupply@gmail.com|60132090904", "1412297": "karenonline321@gmail.com|60126220528", "1412814": "sinisterclubs@gmail.com|60135467600", "1413774": "loineebigplus@gmail.com|601137645887", "1426184": "khadijahrohizat@gmail.com|60164399760", "1427942": "cemaraclassic@gmail.com|601133499845", "1432461": "rajamuhammadfaizuddin@gmail.com|60199581282", "1434765": "nazzerh@giftz4all.com|6591476451", "1436487": "asbrbundle@icloud.com|60133437302", "1438438": "vivimood5617@gmail.com|6588220102"};
+
+// Fold the August merchants' console contacts into the same lookup, so their
+// WhatsApp/Gmail buttons work no matter how the row got into the app.
+AUG_DATA.forEach(a=>{ if(!CONSOLE_CONTACTS[a[0]]) CONSOLE_CONTACTS[a[0]]=(a[2]||'')+'|'+(a[3]||''); });
+
+// ── Subscription status verified against console (11 Aug 2026) ──
+// Of the 113 historical merchants, only these 8 still have a live subscription.
+// Everything else is EXPIRED → belongs in Recover Churned, never in Save At-Risk.
+const ACTIVE_STORES={
+"238275":"2027-01-08","355985":"2026-08-22","904767":"2026-08-17","1227471":"2026-08-20",
+"1301201":"2026-08-22","1368825":"2027-01-17","1371896":"2027-01-19","1423388":"2026-09-05"
+};
+// true = console says this store's subscription has lapsed
+function isExpired(sid){
+  const s=String(sid||'').trim();
+  if(ACTIVE_STORES[s]) return false;                 // confirmed live
+  if(CONSOLE_CONTACTS[s]||CONSOLE_NAMES[s]) return true; // known to console, not in active list → expired
+  return false;                                       // unknown store (manually added) → trust the AM
+}
+
+// ══════════ ENRICH (merge console test data) ══════════
+// Strip sheet prefixes like "MY #1301201 " so names match the console store name.
+// Old-import placeholders like "Store 1371896" are treated as no-name.
+function cleanName(n){
+  let s=String(n||'').replace(/^MY\s*#\d+\s*/i,'').trim();
+  if(/^Store\s+\d+$/i.test(s)) s='';
+  return s;
+}
+function enrich(r){
+  const sid=String(r['Store ID']||'').trim();
+  const t=TEST_CONTACTS[sid];
+  const o={...r};
+  // Console store name always wins — sheet name is only a fallback
+  o['Account Name']=CONSOLE_NAMES[sid]||cleanName(o['Account Name']);
+  // Console contacts (email|phone) fill in whatever the sheet is missing
+  const cc=CONSOLE_CONTACTS[sid];
+  if(cc){const[ce,cp]=cc.split('|');
+    if(!o['Email']&&ce)o['Email']=ce;
+    if(!o['Phone']&&cp)o['Phone']=cp;}
+  // Real renewal date + live/expired flag straight from the console
+  if(ACTIVE_STORES[sid]) o['Renewal Date']=ACTIVE_STORES[sid];
+  o._expired=isExpired(sid);
+  if(t){
+    o['Phone']=o['Phone']||t.phone; o['Email']=o['Email']||t.email;
+    o['Plan Type']=o['Plan Type']||t.planType; o['Renewal Date']=o['Renewal Date']||t.renewal;
+    o._status=t.status; o._freq=!!t.freq; o._note=t.note||'';
+  }
+  return o;
+}
+function waDigits(p){
+  let d=String(p||'').replace(/\D/g,'');   // strips spaces, dashes, +
+  if(!d) return '';
+  if(d[0]==='0') return '6'+d;                       // 0142… → 60142… (MY)
+  if(d[0]==='1'&&d.length<=10) return '60'+d;        // 18239…(no leading 0) → 6018239…
+  return d;                                           // already has a country code (60/65/62/86…) → keep
+}
+function daysSince(ds){if(!ds)return 0;return Math.floor((TODAY-new Date(ds))/86400000);}
+function consoleLink(id){if(!id)return '—';return `<a href="https://console.easystore.pink/stores/${String(id).trim()}" target="_blank" title="Open in console" style="color:var(--navy);font-weight:600;text-decoration:underline">${id}</a>`;}
+
+// ══════════ RISK MODEL ══════════
+// Primary signals — what the merchant is actually DOING:
+//   GMV change %   revenue vs the previous period (-100 = stopped selling)
+//   Orders change % order count vs the previous period
+// Supporting signal — login gap (weak on its own; a store selling fine without
+// logins is healthy, so this only nudges the tier, it never sets it).
+// Failed payments and plan downgrades are deliberately NOT here — the existing
+// system already Slacks those daily; duplicating them would just be noise.
+//
+// GMV / Orders arrive from the console feed as 'GMV Change %' and 'Orders Change %'.
+// Until the feed is connected they may be blank, and the model falls back to login.
+const TIER_ORDER=['healthy','watch','medium','high','critical'];
+function bump(t,n){const i=TIER_ORDER.indexOf(t);return TIER_ORDER[Math.min(TIER_ORDER.length-1,Math.max(0,i+n))];}
+
+function calcTier(r){
+  if(r['Manual Tier Override']&&r['Manual Tier Override']!=='auto') return r['Manual Tier Override'];
+  const plan=planKey(r['Plan Type']||'monthly');
+  const monthly=plan==='monthly';
+  const gmv=r['GMV Change %']===''||r['GMV Change %']==null?null:Number(r['GMV Change %']);
+  const ord=r['Orders Change %']===''||r['Orders Change %']==null?null:Number(r['Orders Change %']);
+  const d=Number(r['Days Since Login'])||0;
+  let tier='healthy';
+
+  // 1. Revenue is the strongest signal
+  if(gmv!==null){
+    if(gmv<=-100)     tier='critical';   // stopped selling entirely
+    else if(gmv<=-60) tier='high';
+    else if(gmv<=-30) tier='medium';
+    else if(gmv<=-15) tier='watch';
+  }
+  // 2. Orders drying up — take the worse of the two
+  if(ord!==null){
+    let t2='healthy';
+    if(ord<=-100)     t2='critical';
+    else if(ord<=-60) t2='high';
+    else if(ord<=-30) t2='medium';
+    else if(ord<=-15) t2='watch';
+    if(TIER_ORDER.indexOf(t2)>TIER_ORDER.indexOf(tier)) tier=t2;
+  }
+  // 3. Login gap: sets the tier only when we have no trend data, otherwise nudges
+  const loginTier = monthly ? (d>=14?'high':d>=7?'medium':'healthy')
+                            : (d>=60?'critical':d>=45?'high':d>=30?'medium':d>=14?'watch':'healthy');
+  if(gmv===null&&ord===null){
+    tier=loginTier;                                   // no trend data — fall back
+  }else if(tier!=='healthy'&&d>0&&TIER_ORDER.indexOf(loginTier)>=2&&tier!=='critical'){
+    tier=bump(tier,1);   // already slipping AND gone quiet — worse. A merchant
+                         // selling normally is never flagged just for not logging in.
+  }
+  // 4. Renewal close + already a concern = Urgent (call first)
+  if(tier!=='healthy'&&tier!=='watch'&&r['Renewal Date']){
+    const toRenew=(new Date(r['Renewal Date'])-TODAY)/86400000;
+    if(toRenew>=0&&toRenew<=60) return 'urgent';
+  }
+  return tier;
+}
+// Plain-English reason the merchant is on the list
+function riskReason(r){
+  const gmv=r['GMV Change %'], ord=r['Orders Change %'], d=Number(r['Days Since Login'])||0;
+  const bits=[];
+  if(gmv!==''&&gmv!=null) bits.push(Number(gmv)<=-100?'sales stopped':'sales down '+Math.abs(Number(gmv))+'%');
+  if(ord!==''&&ord!=null) bits.push(Number(ord)<=-100?'no orders':'orders down '+Math.abs(Number(ord))+'%');
+  if(d>0) bits.push(d+'d no login');
+  return bits.join(' · ')||'—';
+}
+function tierChip(t){
+  const m={urgent:['c-urg','⚡ URGENT'],critical:['c-crit','🟣 CRITICAL'],high:['c-high','🔴 HIGH'],medium:['c-med','🟡 MEDIUM'],watch:['c-watch','👁 WATCH'],healthy:['c-ok','🟢 HEALTHY']};
+  const x=m[t]||m.healthy; return `<span class="chip ${x[0]}">${x[1]}</span>`;
+}
+
+// ══════════ TEMPLATES (auto-picked) ══════════
+// Console names are lowercase slugs ("bobbysansupply"). Merchant-facing messages
+// get a tidied version; names that already have capitals are left exactly as-is.
+function prettyName(n){
+  const s=String(n||'').trim();
+  if(!s) return '';
+  if(/[A-Z]/.test(s)) return s;                       // already styled — don't touch
+  return s.split(/([\s\-_.]+)/)                        // capitalise each word
+          .map(w=>/^[a-z]/.test(w)?w.charAt(0).toUpperCase()+w.slice(1):w)
+          .join('');
+}
+function msgFor(r,kind){
+  const am=myAM||'your Account Manager', store=prettyName(r['Account Name'])||('Store '+r['Store ID']);
+  if(kind==='churned') return `Hi! This is ${am} from EasyStore 😊 I saw that ${store} has been cancelled.\n\nMind telling me why? Just reply with a number:\n\n1. Too expensive\n2. Missing a feature (which one?)\n3. Hard to use (which part?)\n4. Went to another platform (which one?)\n5. Seasonal — back later\n6. Business closed\n7. Not enough sales\n8. Other\n\nTo come back: Admin > Settings > Manage Billing > Plan Details\n\nAnd if there's anything you'd like to share or talk through, just tell me here — I'm happy to help.`;
+  if(kind==='payment') return `Hi! This is ${am} from EasyStore. I noticed that your subscription renewal payment was unsuccessful, and the system has attempted the renewal twice.\n\nTo avoid any interruption to your store access, kindly retry the payment from your EasyStore admin:\n\nEasyStore Admin > Settings > Manage Billing > Plan Details\n\nIf you prefer another card or payment method, you may update the billing details there as well.\n\nPlease let me know once done, or if you need any help with the renewal payment. 😊`;
+  return `Hi! This is ${am} from EasyStore 😊 Just checking in on ${store} — how's everything going with the store? If there's anything you need help with, or any issues at all, just let me know. Always happy to help!`;
+}
+function waLink(r,kind){const d=waDigits(r['Phone']);if(!d)return '';return 'https://wa.me/'+d+'?text='+encodeURIComponent(msgFor(r,kind));}
+function gmailLink(r,kind){
+  if(!r['Email'])return '';
+  const s=getSettings();const bcc=s.crispBcc?'&bcc='+encodeURIComponent(s.crispBcc):'';
+  const su=kind==='atrisk'?'Checking in from EasyStore — '+prettyName(r['Account Name']):'Checking in on your EasyStore subscription — '+prettyName(r['Account Name']);
+  return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(r['Email'])+bcc+'&su='+encodeURIComponent(su)+'&body='+encodeURIComponent(msgFor(r,kind));
+}
+function contactBtns(r,kind){
+  const wa=waLink(r,kind), gm=gmailLink(r,kind);
+  return `${wa?`<a class="btn btn-sm b-wa" target="_blank" href="${wa}">💬 WhatsApp</a>`:''}
+          ${gm?`<a class="btn btn-sm b-gm" target="_blank" href="${gm}">✉ Gmail</a>`:''}`;
+}
+
+// ══════════ NAV ══════════
+const TITLES={queue:'Outreach Queue',dashboard:'Dashboard',risk:'Save At-Risk Merchants',winback:'Recover Churned Merchants',escalations:'Escalations',templates:'Templates',settings:'Settings'};
+function go(p){currentPage=p;
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  const n=document.getElementById('nav-'+p); if(n)n.classList.add('active');
+  document.getElementById('page-title').textContent=TITLES[p]||p; render();}
+function render(){
+  ({queue:renderQueue,dashboard:renderDash,risk:renderRisk,winback:renderWB,escalations:renderEsc,templates:renderTmpl,settings:renderSettings}[currentPage]||renderQueue)();
+  updateBadges();
+}
+function updateBadges(){
+  document.getElementById('q-badge').textContent=buildQueue().filter(q=>!getSentLog()[q.row['ID']]).length;
+  const esc=getData('escalations').filter(e=>e['Status']==='Open').length;
+  const mrrBack=wb.reduce((t,r)=>t+(Number(r['MRR Recovered'])||0),0);
+  const mrrSaved=rk.reduce((t,r)=>t+(Number(r['MRR Recovered'])||0),0);
+  const eb=document.getElementById('esc-badge');eb.textContent=esc;eb.style.display=esc?'':'none';
+}
+
+// ══════════ QUEUE BUILD ══════════
+// Priority: churned in 90d window (fresh first) → churned fading → at-risk urgent/critical/high/medium
+function buildQueue(){
+  const wb=getData('winback').map(enrich).filter(r=>myAM===''||r['AM']===myAM);
+  const rk=getData('risk').map(enrich).filter(r=>myAM===''||r['AM']===myAM);
+  const q=[];
+  wb.forEach(r=>{
+    if(r._status==='resubscribed'||r['Win-Back Outcome']==='Won back')return;
+    if(['won-back','declined'].includes(r['Outreach Status']))return;
+    const d=daysSince(r['Churn Date']);
+    // In-window first. Within that, sortOld=true puts the OLDEST pending first so
+    // nothing quietly ages out of the 90-day window (matches the daily digest).
+    q.push({row:r,kind:'churned',days:d,pri:d<=90?0:1,sub:SORT.queue?-d:d});
+  });
+  rk.forEach(r=>{
+    if(r['Outcome']==='Recovered')return; // renewed — out of the queue
+    if(r._expired)return;                 // already churned — handled by the churned list, not "at risk"
+    const t=calcTier(r);
+    if(['healthy','watch'].includes(t))return;
+    if(q.some(x=>x.row['Store ID']===r['Store ID']))return; // don't duplicate churned ones
+    const p={urgent:2,critical:2.1,high:2.2,medium:2.3}[t]??3;
+    q.push({row:r,kind:'atrisk',tier:t,pri:p,sub:-(Number(r['Days Since Login'])||0)});
+  });
+  q.sort((a,b)=>a.pri-b.pri||a.sub-b.sub);
+  return q;
+}
+
+function renderQueue(){
+  const q=buildQueue(); const sent=getSentLog();
+  const sentCount=q.filter(x=>sent[x.row['ID']]).length;
+  const slots=[]; for(let i=0;i<q.length;i+=BATCH) slots.push(q.slice(i,i+BATCH));
+  const slotTimes=['10:00 – 11:00','12:00 – 13:00','15:00 – 16:00','17:00 – 18:00'];
+  document.getElementById('page').innerHTML=`
+    <div class="alert alert-blue">📤 <b>${myAM?myAM+"'s":'Team'} queue for today</b> — batched ${BATCH} per slot to keep WhatsApp safe. Work top-to-bottom: click WhatsApp/Gmail → message is pre-filled → send → tick <b>Mark sent</b>. ${q.length===0?'':'⚠ Before sending, confirm the merchant has not already re-subscribed.'}</div>
+    <div class="section"><div class="section-body">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="font-size:12px;font-weight:700;color:var(--navy)">👤 Queue for
+          <select class="select-inline" onchange="myAM=this.value;saveMyAM();renderQueue();updateBadges()">
+            <option value="">All AMs</option>
+            ${[...new Set([...(getSettings().amList||[]),...getData('winback').map(r=>r['AM']).filter(Boolean)])].sort().map(a=>`<option${myAM===a?' selected':''}>${a}</option>`).join('')}
+          </select></label>
+        ${sortBtn('queue','renderQueue')}
+        <b style="color:var(--navy)">Progress</b>
+        <div class="progress" style="flex:1;min-width:120px"><i style="width:${q.length?Math.round(sentCount/q.length*100):0}%"></i></div>
+        <span style="font-size:12px;color:#888">${sentCount} / ${q.length} sent</span>
+      </div>
+      ${q.length===0?`<div class="empty"><div class="big">🎉</div><p>Queue clear${myAM?' for '+myAM:''}! No churned or at-risk merchants waiting.</p><p style="margin-top:6px;font-size:11px">If this looks wrong, run Sync or check Settings → Import.</p></div>`:
+      slots.map((slot,si)=>`
+        <div class="slot">Slot ${si+1} · ${slotTimes[si]||'later'}${si>0?' <span style="color:#bbb">· unlocks after previous slot</span>':''}</div>
+        ${slot.map((x,i)=>{const r=x.row;const isSent=!!sent[r['ID']];const idx=si*BATCH+i+1;
+          const over5=x.kind==='churned'&&x.days>5;
+          return `<div class="qcard${isSent?' sent':''}" ${si>0?'style="opacity:'+(isSent?'.45':'.75')+'"':''}>
+            <div class="qnum">${idx}</div>
+            <div style="flex:1">
+              <span class="qname">${r['Account Name']||'Store '+r['Store ID']}</span>
+              <span style="font-size:11px;margin-left:4px">${consoleLink(r['Store ID'])}</span>
+              ${x.kind==='churned'?`<span class="chip c-high">CHURNED ${x.days}d</span>`:tierChip(x.tier)}
+              ${r['Plan Type']?`<span class="chip c-plan">${planLabel(r['Plan Type'])}${r['Plan Tier']?' · '+r['Plan Tier']:''}</span>`:(r['Plan Tier']?`<span class="chip c-plan">${r['Plan Tier']}</span>`:'')}
+              ${r._freq?'<span class="chip c-freq">↻ Frequent canceller</span>':''}
+              <div class="qmeta">${x.kind==='churned'
+                ?`Cancelled ${r['Churn Date']||'—'}${r['Segment']?' · Reason: '+segLabel(r['Segment']):''}`
+                :`Active · ${r['Days Since Login']||'?'}d no login${r['Renewal Date']?' · renewal '+r['Renewal Date']:''}`}</div>
+              ${over5?`<div class="offer-note">💡 Internal: cancelled &gt;5 days — eligible for case-by-case 50% offer. Check with lead before offering. Not in the template.</div>`:''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                ${contactBtns(r,x.kind==='churned'?'churned':'atrisk')}
+                <button class="btn btn-sm b-sent${isSent?' done':''}" onclick="markSent('${r['ID']}')">${isSent?'✓ Sent':'☑ Mark sent'}</button>
+              </div>
+            </div>
+          </div>`;}).join('')}`).join('')}
+    </div></div>`;
+}
+function markSent(id){
+  const l=getSentLog();
+  if(l[id]) delete l[id]; else l[id]=new Date().toISOString();
+  setSentLog(l);
+  // stamp the contact date on the row + push to sheet (works for BOTH churned and at-risk rows)
+  const wb=getData('winback');const r=wb.find(x=>x['ID']===id);
+  if(r){
+    r['Last Contact']=todayKey();
+    if(!r['Outreach Status']||r['Outreach Status']==='not-started')r['Outreach Status']='email-sent';
+    setData('winback',wb);saveToRemote('winback',r);
+  }else{
+    const rk=getData('risk');const rr=rk.find(x=>x['ID']===id);
+    if(rr){
+      rr['Last Action Date']=todayKey();
+      if(!rr['Intervention Status']||rr['Intervention Status']==='not-started')rr['Intervention Status']='contacted';
+      setData('risk',rk);saveToRemote('risk',rr);
+    }
+  }
+  renderQueue();updateBadges();
+}
+function segLabel(s){return({seasonal:'Seasonal',price:'Price',product:'Product Gap',silent:'No Response',usability:'Hard to use',competitor:'Competitor',closed:'Business closed','no-sales':'No sales'})[s]||s||'—';}
+function planLabel(p){const v=String(p||'').toLowerCase().replace(/\s/g,'');return({monthly:'Monthly',yearly:'Yearly','2years':'2 Years','2year':'2 Years','3years':'3 Years','3year':'3 Years'})[v]||p||'';}
+function planKey(p){return String(p||'').toLowerCase().replace(/\s/g,'');}
+const PLAN_OPTS=[['all','All'],['monthly','Monthly'],['yearly','Yearly'],['2years','2 Years'],['3years','3 Years']];
+
+// ══════════ DASHBOARD ══════════
+function renderDash(){
+  const wb=getData('winback').map(enrich), rk=getData('risk').map(enrich);
+  const won=wb.filter(r=>r['Win-Back Outcome']==='Won back'||r._status==='resubscribed').length;
+  const inWin=wb.filter(r=>daysSince(r['Churn Date'])<=90&&r['Win-Back Outcome']!=='Won back').length;
+  const tiers={urgent:0,critical:0,high:0,medium:0};
+  rk.filter(r=>!r._expired).forEach(r=>{const t=calcTier(r);if(tiers[t]!==undefined)tiers[t]++;});
+  const esc=getData('escalations').filter(e=>e['Status']==='Open').length;
+  const mrrBack=wb.reduce((t,r)=>t+(Number(r['MRR Recovered'])||0),0);
+  const mrrSaved=rk.reduce((t,r)=>t+(Number(r['MRR Recovered'])||0),0);
+  document.getElementById('page').innerHTML=`
+    <div class="cards-row">
+      <div class="card"><div class="card-num">${wb.length}</div><div class="card-label">Churned tracked</div></div>
+      <div class="card card-red"><div class="card-num">${inWin}</div><div class="card-label">In 90-day window</div></div>
+      <div class="card card-green"><div class="card-num">${won}</div><div class="card-label">Won back / re-subscribed</div></div>
+      <div class="card card-red"><div class="card-num">${tiers.urgent+tiers.critical+tiers.high}</div><div class="card-label">Active at High+ risk</div></div>
+      <div class="card card-orange"><div class="card-num">${esc}</div><div class="card-label">Open escalations</div></div>
+    </div>
+    <div class="cards-row">
+      <div class="card card-green"><div class="card-num">RM ${mrrBack.toLocaleString()}</div><div class="card-label">MRR recovered — churned won back</div></div>
+      <div class="card card-green"><div class="card-num">RM ${mrrSaved.toLocaleString()}</div><div class="card-label">MRR retained — at-risk saved</div></div>
+      <div class="card"><div class="card-num">RM ${(mrrBack+mrrSaved).toLocaleString()}</div><div class="card-label">Total MRR protected</div></div>
+    </div>
+    <div class="section"><div class="section-head"><h3>How risk tiers are decided</h3><span style="font-size:11px;color:#888">sales and orders first, login as a supporting signal</span></div>
+      <div class="section-body" style="padding:12px 18px">
+        <table style="min-width:0">
+          <thead><tr><th>Signal</th><th>👁 Watch</th><th>🟡 Medium</th><th>🔴 High</th><th>🟣 Critical</th></tr></thead>
+          <tbody>
+            <tr><td><b>Sales (GMV) down by</b></td><td>15%</td><td>30%</td><td>60%</td><td>100% — stopped</td></tr>
+            <tr><td><b>Orders down by</b></td><td>15%</td><td>30%</td><td>60%</td><td>100% — none</td></tr>
+            <tr><td>No login — monthly plan</td><td>—</td><td>7 days</td><td>14 days</td><td>—</td></tr>
+            <tr><td>No login — yearly and longer</td><td>14 days</td><td>30 days</td><td>45 days</td><td>60 days</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:12px;color:#777;margin-top:8px">A merchant still selling normally is not at risk, even if they rarely log in. Login gap only worsens the tier when sales are already falling — or sets it when we have no sales data yet.</p>
+        <p style="font-size:12px;color:#777">⚡ <b>Urgent</b> overrides everything when a merchant is Medium or worse <b>and</b> renews within 60 days.</p>
+        <p style="font-size:12px;color:#777">Failed renewal payments and plan downgrades are deliberately excluded — the existing system already sends those to Slack daily.</p>
+      </div></div>
+    <div class="section"><div class="section-head"><h3>📤 Today's queue preview</h3><button class="btn btn-ghost btn-sm" onclick="go('queue')">Open queue</button></div>
+      <div class="section-body">${buildQueue().slice(0,5).map(x=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0">
+          <div style="flex:1"><b style="font-size:13px;cursor:pointer;color:var(--navy)" onclick="go('queue')">${x.row['Account Name']||'Store '+x.row['Store ID']}</b>
+          <span style="font-size:11px;margin-left:8px">${consoleLink(x.row['Store ID'])}</span>
+          <span style="font-size:11px;color:#888;margin-left:8px">${x.kind==='churned'?'churned '+x.days+'d':x.tier}</span></div>
+          ${x.kind==='churned'?'<span class="chip c-high">CHURNED</span>':tierChip(x.tier)}
+        </div>`).join('')||'<div class="empty"><p>Queue empty 🎉</p></div>'}
+      </div></div>`;
+}
+
+// ══════════ SAVE ACTIVE (risk) ══════════
+function renderRisk(){
+  const raw=getData('risk').map(enrich);
+  const hidden=raw.filter(r=>r._expired).length;   // expired = churned, they live in Recover Churned
+  let all=raw.filter(r=>!r._expired).map(r=>({...r,_tier:calcTier(r)}));
+  const ams=[...new Set(all.map(r=>r['AM']).filter(Boolean))].sort();
+  let f=applyFilters('risk',all);
+  if(rkSearch){const s=rkSearch.toLowerCase();f=f.filter(r=>(r['Account Name']||'').toLowerCase().includes(s)||String(r['Store ID']).includes(s));}
+  const pages=Math.max(1,Math.ceil(f.length/PAGE_SIZE)); if(rkPage>pages)rkPage=1;
+  const rows=f.slice((rkPage-1)*PAGE_SIZE,rkPage*PAGE_SIZE);
+  document.getElementById('page').innerHTML=`
+    <div class="alert alert-blue">🛡 <b>Save At-Risk</b> = merchants whose subscription is <b>still live</b> but showing risk signals. Goal: fix the blocker BEFORE renewal. When one cancels, click <b>Mark churned</b> — it moves to Recover Churned with history.<br>
+    <span style="font-size:11px">ℹ <b>Tier basis:</b> sales and order trend first, login gap as a supporting signal. Failed payments and plan downgrades are excluded — the existing system already alerts on those daily.</span></div>
+    ${hidden?`<div class="alert alert-yellow">🔎 <b>${hidden} expired merchant${hidden>1?'s':''} hidden from this list.</b> Their subscription has already lapsed (verified against the console), so they are not "at risk" — they are churned, and they live in <b>Recover Churned</b>. Only merchants with a live subscription appear here.</div>`:''}
+    <div class="section">
+      <div class="section-head"><h3>Merchants (${f.length})</h3></div>
+      ${filterBar('risk',all,'renderRisk','rkSearch',rkSearch,'rk-search')}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Store ID</th><th>Account Name</th><th>Plan</th><th>Why at risk</th><th>Renewal</th><th>Tier</th><th>Contact</th><th>AM</th><th>Notes</th><th></th></tr></thead>
+        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${rkSearch?'🔍':'🟢'}</div><p>${rkSearch?'No results for "'+rkSearch+'"':'No merchants here yet — import from Settings or add via sheet.'}</p></div></td></tr>`:
+        rows.map(r=>`<tr>
+          <td>${consoleLink(r['Store ID'])}</td>
+          <td><b>${r['Account Name']||'—'}</b>${r._freq?' <span class="chip c-freq">↻</span>':''}</td>
+          <td>${r['Plan Type']?`<span class="chip c-plan">${planLabel(r['Plan Type'])}</span>`:'<span style="color:#bbb">—</span>'}</td>
+          <td style="font-size:11px">${riskReason(r)}</td>
+          <td style="font-size:11px">${r['Renewal Date']||'—'}</td>
+          <td>${tierChip(r._tier)}</td>
+          <td style="white-space:nowrap">${contactBtns(r,'atrisk')||'<span style="color:#bbb;font-size:11px">no contact</span>'}</td>
+          <td>${r['AM']||'—'}</td>
+          <td><input class="input-inline" value="${(r['Notes']||'').replace(/"/g,'&quot;')}" onblur="updRow('risk','${r['ID']}','Notes',this.value)"></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-xs" style="background:var(--green-l);color:#145A32;border:1px solid var(--green)" onclick="markRenewedRisk('${r['ID']}')">✓ Renewed</button>
+            <button class="btn btn-xs btn-ghost" onclick="markChurned('${r['ID']}')">Mark churned →</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      ${pages>1?pager('rkPage',rkPage,pages,'renderRisk'):''}
+    </div>`;
+  if(rkSearch){requestAnimationFrame(()=>{const e=document.getElementById('rk-search');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}});}
+}
+function markRenewedRisk(id){
+  const r=getData('risk').find(x=>x['ID']===id); if(!r)return;
+  openModal('Mark as saved — '+prettyName(r['Account Name']||r['Store ID']),`
+    <div class="form-group"><label>MRR retained (RM) *</label>
+      <input id="f-mrr" type="number" min="0" step="1" placeholder="e.g. 249" value="${r['MRR']||''}">
+      <div style="font-size:11px;color:#888;margin-top:4px">Monthly value kept by saving this merchant.</div></div>
+    <div class="form-group"><label>Note (optional)</label><textarea id="f-note" rows="2" placeholder="What did you do to save them?"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-navy" onclick="confirmRenewedRisk('${id}')">Save</button>
+    </div>`);
+}
+function confirmRenewedRisk(id){
+  const mrr=Number(document.getElementById('f-mrr').value)||0;
+  if(!mrr){alert('Please enter the MRR retained.');return;}
+  const rows=getData('risk');const r=rows.find(x=>x['ID']===id);if(!r)return;
+  r['Outcome']='Recovered'; r['Intervention Status']='recovered'; r['MRR Recovered']=mrr;
+  const n=document.getElementById('f-note').value.trim(); if(n)r['Notes']=((r['Notes']||'')+' | '+n).trim();
+  r['Renewed Date']=todayKey(); r['Last Action Date']=todayKey(); r['Updated At']=new Date().toISOString();
+  setData('risk',rows); saveToRemote('risk',r); closeModal(); render();
+}
+function markRenewedWB(id){
+  const r=getData('winback').find(x=>x['ID']===id); if(!r)return;
+  openModal('Mark as renewed — '+prettyName(r['Account Name']||r['Store ID']),`
+    <div class="form-group"><label>MRR recovered (RM) *</label>
+      <input id="f-mrr" type="number" min="0" step="1" placeholder="e.g. 249" value="${r['MRR']||''}">
+      <div style="font-size:11px;color:#888;margin-top:4px">Monthly value of the plan they renewed on. Counts toward your recovery total.</div></div>
+    <div class="form-group"><label>Plan renewed on</label>
+      <input id="f-plan" placeholder="e.g. Standard monthly" value="${r['Plan Tier']||''}"></div>
+    <div class="form-group"><label>Note (optional)</label><textarea id="f-note" rows="2" placeholder="What brought them back?"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-navy" onclick="confirmRenewedWB('${id}')">Save as renewed</button>
+    </div>`);
+}
+function confirmRenewedWB(id){
+  const mrr=Number(document.getElementById('f-mrr').value)||0;
+  if(!mrr){alert('Please enter the MRR recovered.');return;}
+  const rows=getData('winback');const r=rows.find(x=>x['ID']===id);if(!r)return;
+  r['Win-Back Outcome']='Won back'; r['Outreach Status']='won-back';
+  r['MRR Recovered']=mrr; r['Renewed Plan']=document.getElementById('f-plan').value.trim();
+  const n=document.getElementById('f-note').value.trim(); if(n)r['Notes']=((r['Notes']||'')+' | '+n).trim();
+  r['Renewed Date']=todayKey(); r['Last Contact']=todayKey(); r['Updated At']=new Date().toISOString();
+  setData('winback',rows); saveToRemote('winback',r); closeModal(); render();
+}
+function markChurned(id){
+  const r=getData('risk').find(x=>x['ID']===id); if(!r)return;
+  openModal('Mark as churned — '+prettyName(r['Account Name']||r['Store ID']),`
+    <div class="form-group"><label>Why did they cancel? *</label>
+      <select id="f-reason" onchange="reasonHint()">
+        <option value="">— choose —</option>
+        <option value="price">Price / cost</option>
+        <option value="product">Product gap</option>
+        <option value="usability">Hard to use</option>
+        <option value="competitor">Competitor</option>
+        <option value="seasonal">Seasonal — will be back</option>
+        <option value="closed">Business closed</option>
+        <option value="no-sales">Not generating sales</option>
+        <option value="silent">No reason given</option>
+      </select></div>
+    <div class="form-group"><label>MRR lost (RM)</label>
+      <input id="f-lost" type="number" min="0" step="1" placeholder="e.g. 249" value="${r['MRR']||''}"></div>
+    <div class="form-group"><label>Details (optional)</label>
+      <textarea id="f-detail" rows="2" placeholder="Anything they said that is worth recording"></textarea>
+      <div id="detail-hint" style="font-size:11px;color:#888;margin-top:4px"></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-navy" onclick="confirmChurned('${id}')">Move to Recover Churned</button>
+    </div>`);
+}
+const DETAIL_HINT={product:'Which feature?',usability:'Which part?',competitor:'Which platform?'};
+function reasonHint(){
+  const v=document.getElementById('f-reason').value;
+  const hint=document.getElementById('detail-hint');
+  if(hint) hint.textContent=DETAIL_HINT[v]||'';
+}
+function confirmChurned(id){
+  const reason=document.getElementById('f-reason').value;
+  if(!reason){alert('Please choose a reason — this is what the churn tracker reports on.');return;}
+  const rk=getData('risk'); const i=rk.findIndex(x=>x['ID']===id); if(i<0)return;
+  const r=rk[i];
+  const detail=document.getElementById('f-detail').value.trim();
+  const lost=Number(document.getElementById('f-lost').value)||0;
+  const wbRow={'ID':uuid(),'Store ID':r['Store ID'],'Account Name':r['Account Name'],
+    'Segment':reason,'Churn Reason Detail':detail,'MRR Lost':lost,
+    'Churn Date':todayKey(),'Days Since Churn':0,'AM':r['AM'],
+    'Outreach Status':'not-started','Last Contact':'','Win-Back Outcome':'—',
+    'Survey Text (col R)':'','Notes':('Moved from Save At-Risk. '+(r['Notes']||'')+(detail?' | '+detail:'')).trim(),
+    'Phone':r['Phone']||'','Email':r['Email']||'','Plan Type':r['Plan Type']||'','Plan Tier':r['Plan Tier']||'',
+    'Updated At':new Date().toISOString()};
+  const wb=getData('winback'); wb.unshift(wbRow); setData('winback',wb); saveToRemote('winback',wbRow);
+  rk.splice(i,1); setData('risk',rk); deleteFromRemote('risk',id);
+  closeModal(); render();
+}
+function updRow(tab,id,field,val){
+  const rows=getData(tab);const r=rows.find(x=>x['ID']===id);if(!r)return;
+  r[field]=val;r['Updated At']=new Date().toISOString();setData(tab,rows);saveToRemote(tab,r);
+}
+function pager(varName,page,pages,fn){
+  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-top:1px solid var(--border);font-size:12px;color:#888">
+    <span>Page ${page} / ${pages}</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-xs" onclick="${varName}=Math.max(1,${page-1});${fn}()" ${page===1?'disabled':''}>← Prev</button>
+      <button class="btn btn-ghost btn-xs" onclick="${varName}=Math.min(${pages},${page+1});${fn}()" ${page===pages?'disabled':''}>Next →</button>
+    </div></div>`;
+}
+
+// ══════════ RECOVER CHURNED (winback) ══════════
+function renderWB(){
+  let all=getData('winback').map(enrich);
+  let f=applyFilters('winback',all);
+  if(wbSearch){const s=wbSearch.toLowerCase();f=f.filter(r=>(r['Account Name']||'').toLowerCase().includes(s)||String(r['Store ID']).includes(s));}
+  // Oldest churn first by default; the sort button flips it
+  f.sort((a,b)=>{const d=daysSince(a['Churn Date'])-daysSince(b['Churn Date']);return SORT.winback?-d:d;});
+  const pages=Math.max(1,Math.ceil(f.length/PAGE_SIZE)); if(wbPage>pages)wbPage=1;
+  const rows=f.slice((wbPage-1)*PAGE_SIZE,wbPage*PAGE_SIZE);
+  const won=all.filter(r=>r['Win-Back Outcome']==='Won back'||r._status==='resubscribed').length;
+  document.getElementById('page').innerHTML=`
+    <div class="cards-row">
+      <div class="card"><div class="card-num">${all.length}</div><div class="card-label">Total churned</div></div>
+      <div class="card card-red"><div class="card-num">${all.filter(r=>daysSince(r['Churn Date'])<=90).length}</div><div class="card-label">In 90-day window</div></div>
+      <div class="card card-green"><div class="card-num">${won}</div><div class="card-label">Won back</div></div>
+    </div>
+    <div class="section">
+      <div class="section-head"><h3>Merchants (${f.length})</h3>${sortBtn('winback','renderWB')}</div>
+      ${filterBar('winback',all,'renderWB','wbSearch',wbSearch,'wb-search')}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Store ID</th><th>Account Name</th><th>Plan</th><th>Cancelled</th><th>Days</th><th>Reason</th><th>Contact</th><th>Status</th><th>AM</th><th></th></tr></thead>
+        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${wbSearch?'🔍':'📭'}</div><p>${wbSearch?'No results for "'+wbSearch+'"':'Nothing here yet — run Import in Settings.'}</p></div></td></tr>`:
+        rows.map(r=>{const d=daysSince(r['Churn Date']);const isWon=r['Win-Back Outcome']==='Won back'||r._status==='resubscribed';
+        return `<tr ${isWon?'style="background:var(--green-l)"':''}>
+          <td>${consoleLink(r['Store ID'])}</td>
+          <td><b>${r['Account Name']||'—'}</b>${r._freq?' <span class="chip c-freq">↻ 20+ cycles</span>':''}${r._note?`<div style="font-size:10px;color:var(--green)">${r._note}</div>`:''}</td>
+          <td>${r['Plan Type']?`<span class="chip c-plan">${planLabel(r['Plan Type'])}</span>`:'<span style="color:#bbb">—</span>'}</td>
+          <td style="font-size:11px">${r['Churn Date']||'—'}</td>
+          <td><span class="chip ${d<=90?'c-high':'c-med'}">${d}d</span></td>
+          <td style="font-size:11px">${segLabel(r['Segment'])}</td>
+          <td style="white-space:nowrap">${isWon?'<span class="chip c-ok">✓ back</span>':(contactBtns(r,'churned')||'<span style="color:#bbb;font-size:11px">no contact</span>')}</td>
+          <td><select class="select-inline" onchange="updRow('winback','${r['ID']}','Outreach Status',this.value)">
+            ${[['not-started','Not started'],['email-sent','Contacted'],['call-booked','Call booked'],['no-response','No response'],['declined','Declined']].map(([v,l])=>`<option value="${v}"${r['Outreach Status']===v?' selected':''}>${l}</option>`).join('')}</select></td>
+          <td>${r['AM']||'—'}</td>
+          <td>${isWon?'<span class="chip c-ok">Renewed ✓</span>':`<button class="btn btn-xs" style="background:var(--green-l);color:#145A32;border:1px solid var(--green)" onclick="markRenewedWB('${r['ID']}')">✓ Renewed</button>`}</td>
+        </tr>`;}).join('')}</tbody>
+      </table></div>
+      ${pages>1?pager('wbPage',wbPage,pages,'renderWB'):''}
+    </div>`;
+  if(wbSearch){requestAnimationFrame(()=>{const e=document.getElementById('wb-search');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}});}
+}
+function delWB(id){if(!confirm('Delete this merchant?'))return;setData('winback',getData('winback').filter(r=>r['ID']!==id));deleteFromRemote('winback',id);renderWB();}
+
+// ══════════ ESCALATIONS ══════════
+function renderEsc(){
+  const raw=getData('escalations');
+  let all=applyFilters('esc',raw);
+  if(escSearch){const s=escSearch.toLowerCase();all=all.filter(e=>(e['Store Name']||'').toLowerCase().includes(s)||String(e['Store ID']||'').includes(s)||(e['Issue Summary']||'').toLowerCase().includes(s));}
+  document.getElementById('page').innerHTML=`
+    <div class="alert alert-blue">🚨 <b>Where this data comes from:</b> escalations are logged manually by the team with "+ Log Escalation" — for serious cases that need senior review (e.g. unresolved support issues, blocked cancellations, refund disputes). They are NOT imported from the sheet, and they sync to the RetentionApp_Escalations tab.</div>
+    <div class="section">
+      <div class="section-head"><h3>Escalation Log (${all.length})</h3>
+        <button class="btn btn-navy btn-sm" onclick="addEsc()">+ Log Escalation</button></div>
+      ${filterBar('esc',raw,'renderEsc','escSearch',escSearch,'esc-search')}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Store</th><th>Issue</th><th>Severity</th><th>Status</th><th>Assigned</th><th>Added</th><th></th></tr></thead>
+        <tbody>${all.length===0?'<tr><td colspan="7"><div class="empty"><div class="big">✅</div><p>No escalations.</p></div></td></tr>':
+        all.map(e=>`<tr>
+          <td><b>${e['Store Name']||e['Store ID']}</b></td>
+          <td style="max-width:260px;font-size:12px">${e['Issue Summary']||''}</td>
+          <td><span class="chip ${e['Severity']==='Critical'?'c-high':'c-med'}">${e['Severity']||'—'}</span></td>
+          <td><select class="select-inline" onchange="updRow('escalations','${e['ID']}','Status',this.value);updateBadges()">
+            ${['Open','In Progress','Resolved'].map(o=>`<option${e['Status']===o?' selected':''}>${o}</option>`).join('')}</select></td>
+          <td>${e['Assigned To']||'—'}</td>
+          <td style="font-size:11px;color:#888">${e['Date Added']||''}</td>
+          <td><button class="btn btn-xs" style="background:var(--red-l);color:var(--red);border:1px solid var(--red)" onclick="delEsc('${e['ID']}')">✕</button></td>
+        </tr>`).join('')}</tbody></table></div>
+    </div>`;
+}
+function addEsc(){
+  openModal('Log Escalation',`
+    <div class="form-grid form-2">
+      <div class="form-group"><label>Store Name *</label><input id="f-name"></div>
+      <div class="form-group"><label>Store ID</label><input id="f-sid"></div>
+    </div>
+    <div class="form-group"><label>Issue *</label><textarea id="f-issue"></textarea></div>
+    <div class="form-grid form-2">
+      <div class="form-group"><label>Severity</label><select id="f-sev">${['Critical','High','Medium','Low'].map(s=>`<option>${s}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Assigned To</label><select id="f-asg"><option value=""></option>${(getSettings().amList||[]).map(a=>`<option>${a}</option>`).join('')}</select></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-navy" onclick="saveEsc()">Save</button></div>`);
+}
+async function saveEsc(){
+  const row={'ID':uuid(),'Store Name':document.getElementById('f-name').value.trim(),'Store ID':document.getElementById('f-sid').value.trim(),
+    'Issue Summary':document.getElementById('f-issue').value.trim(),'Severity':document.getElementById('f-sev').value,
+    'Status':'Open','Assigned To':document.getElementById('f-asg').value,'Resolution Notes':'','Date Added':todayKey(),'Updated At':new Date().toISOString()};
+  if(!row['Store Name']||!row['Issue Summary']){alert('Store name and issue required');return;}
+  const rows=getData('escalations');rows.unshift(row);setData('escalations',rows);await saveToRemote('escalations',row);
+  closeModal();renderEsc();updateBadges();
+}
+function delEsc(id){if(!confirm('Delete?'))return;setData('escalations',getData('escalations').filter(r=>r['ID']!==id));deleteFromRemote('escalations',id);renderEsc();updateBadges();}
+
+// ══════════ TEMPLATES ══════════
+function renderTmpl(){
+  document.getElementById('page').innerHTML=`
+    <div class="alert alert-blue">Templates auto-personalise with [Store Name] + your AM name and auto-pick by situation: churned → 1, failed payment → 2, at-risk → 3. The 50% offer is never written — case-by-case with lead approval only.</div>
+    <div class="section"><div class="section-head"><h3>What their reply number means</h3></div>
+      <div class="section-body" style="padding:12px 18px"><table style="min-width:0"><thead><tr><th>They reply</th><th>Log it as</th></tr></thead><tbody>
+        <tr><td>1</td><td>Price / cost</td></tr>
+        <tr><td>2</td><td>Product gap</td></tr>
+        <tr><td>3</td><td>Hard to use</td></tr>
+        <tr><td>4</td><td>Competitor</td></tr>
+        <tr><td>5</td><td>Seasonal</td></tr>
+        <tr><td>6</td><td>Business closed</td></tr>
+        <tr><td>7</td><td>No sales</td></tr>
+        <tr><td>8</td><td>Read what they wrote, then pick the closest option</td></tr>
+      </tbody></table>
+      <p style="font-size:12px;color:#777;margin-top:8px">There is deliberately no "no comment" option — every churn should end with a recorded reason.</p></div></div>
+    ${[['1 · Cancelled account (asks them to pick a reason)','churned'],['2 · Failed renewal payment','payment'],['3 · At-risk check-in (still active)','atrisk']].map(([t,k])=>`
+      <div class="section"><div class="section-head"><h3>${t}</h3></div>
+      <div class="section-body"><div class="tmpl-body">${msgFor({'Account Name':'[Store Name]'},k)}</div></div></div>`).join('')}`;
+}
+
+// ══════════ SETTINGS ══════════
+function renderSettings(){
+  const s=getSettings();
+  const wb=getData('winback'), rk=getData('risk');
+  document.getElementById('page').innerHTML=`
+    <div class="setup-step"><h3>Where the data comes from</h3>
+      <p>This app is self-contained — no spreadsheet needed. Merchant details (names, emails, phones, plans, expiry, account manager) come from a console snapshot taken <b>${SNAPSHOT_DATE}</b>.
+      Your own work — status changes, notes, mark-sent, renewed — is saved in this browser.</p>
+      <p><b>Currently loaded:</b> ${wb.length} churned · ${rk.length} at-risk</p>
+      <button class="btn btn-navy" onclick="syncAll()">⟳ Refresh data</button>
+      <span style="font-size:12px;color:#888;margin-left:10px">${dataApi()?'Live connection active':'Using the built-in snapshot until connected below'}</span>
+    </div>
+
+    <div class="setup-step" style="border-left-color:var(--green)"><h3>Connect to console</h3>
+      <p>When engineering gives you the two addresses, paste them here and press Save. Nothing else to do — leave blank to keep using the built-in snapshot.</p>
+      <label style="font-size:11px;font-weight:700;color:#555">Merchant data address</label>
+      <input id="set-data" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:4px 0 10px" value="${(s.dataApi||'')}" placeholder="paste the address for reading merchant data">
+      <label style="font-size:11px;font-weight:700;color:#555">Status saving address</label>
+      <input id="set-status" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:4px 0 10px" value="${(s.statusApi||'')}" placeholder="paste the address for sharing status with the team">
+      <button class="btn btn-navy" onclick="saveCfg()">Save</button>
+      <button class="btn btn-ghost" style="margin-left:8px" onclick="testConn()">Test connection</button>
+      <span id="conn-status" style="font-size:12px;color:#888;margin-left:10px"></span></div>
+
+    <div class="setup-step"><h3>Your name</h3>
+      <p>Used to sign the WhatsApp and email messages, and to filter your queue.</p>
+      <input id="set-me" style="width:280px;border:1px solid var(--border);border-radius:6px;padding:8px 10px" value="${myAM||''}" placeholder="e.g. Amira Liyana">
+      <button class="btn btn-navy btn-sm" onclick="saveCfg()" style="margin-left:8px">Save</button></div>
+
+    <div class="setup-step"><h3>Crisp BCC (email tracking)</h3>
+      <p>Every Gmail draft blind-copies this address so the thread lands in Crisp. Leave blank to skip.</p>
+      <input id="set-crisp" style="width:340px;border:1px solid var(--border);border-radius:6px;padding:8px 10px" value="${s.crispBcc||''}" placeholder="your-crisp-inbox@easystore.co">
+      <button class="btn btn-navy btn-sm" onclick="saveCfg()" style="margin-left:8px">Save</button></div>
+
+    <div class="setup-step"><h3>Team list</h3>
+      <p>Comma-separated. Used for the queue filter and escalation assignment.</p>
+      <input id="set-ams" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px" value="${(s.amList||[]).join(', ')}">
+      <button class="btn btn-navy btn-sm" onclick="saveCfg()" style="margin-top:8px">Save</button></div>
+
+    <div class="setup-step" style="border-left-color:var(--accent)"><h3>Sharing with the team</h3>
+      <p>${statusApi()
+        ? 'Connected — your updates are shared with the whole team automatically.'
+        : '<b>Not connected yet.</b> Your updates stay in your own browser, so colleagues will not see them. Use the buttons below to hand over or combine progress in the meantime.'}</p>
+      <button class="btn btn-navy" onclick="exportProgress()">⬇ Export my progress</button>
+      <label class="btn btn-ghost" style="margin-left:8px;cursor:pointer">⬆ Merge someone's file
+        <input type="file" accept="application/json" style="display:none" onchange="importProgress(event)"></label>
+      <p style="font-size:11px;color:#888;margin-top:8px">Merging keeps whichever update is newer, so nothing gets overwritten by accident. Also use Export to back up before installing a new version of the app.</p></div>
+
+    <div class="setup-step"><h3>Version</h3>
+      <p>You are on <b>v${APP_VERSION}</b> (${APP_UPDATED}). If you were sent a newer file, export your progress first, open the new file, then merge the export back in.</p></div>
+
+    <div class="setup-step" style="border-left-color:var(--red)"><h3>Reset</h3>
+      <p>Clears your local progress and reloads the merchant list from the snapshot. Does not affect anything outside this browser.</p>
+      <button class="btn btn-ghost" onclick="resetLocal()">Reset my data</button></div>`;
+}
+function saveCfg(){
+  const s=getSettings();
+  const me=document.getElementById('set-me'); if(me){myAM=me.value.trim();s.myAM=myAM;}
+  const c=document.getElementById('set-crisp'); if(c)s.crispBcc=c.value.trim();
+  const a=document.getElementById('set-ams'); if(a)s.amList=a.value.split(',').map(x=>x.trim()).filter(Boolean);
+  const d=document.getElementById('set-data'); if(d)s.dataApi=d.value.trim();
+  const st2=document.getElementById('set-status'); if(st2)s.statusApi=st2.value.trim();
+  saveSettings(s); apiStat(); alert('Saved'); render();
+}
+async function testConn(){
+  const el=document.getElementById('conn-status'); if(el)el.textContent='Testing…';
+  if(!dataApi()){ if(el)el.textContent='No address entered — still using the built-in snapshot.'; return; }
+  const d=await fetchLive();
+  if(el)el.textContent = d ? ('✓ Working — '+(d.length||0)+' merchants found') : '✗ Could not reach that address. Check it with engineering.';
+}
+function exportProgress(){
+  const d={v:APP_VERSION,exported:new Date().toISOString(),by:myAM||'',
+    winback:getData('winback'),risk:getData('risk'),escalations:getData('escalations')};
+  const b=new Blob([JSON.stringify(d,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='retention-progress-'+(myAM||'me').replace(/\s+/g,'-')+'-'+todayKey()+'.json';
+  a.click();
+}
+function importProgress(ev){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      let merged=0;
+      ['winback','risk','escalations'].forEach(tab=>{
+        if(!Array.isArray(d[tab]))return;
+        const mine=getData(tab);
+        d[tab].forEach(inc=>{
+          const cur=mine.find(x=>String(x['Store ID'])===String(inc['Store ID']));
+          if(!cur){ mine.push(inc); merged++; return; }
+          // keep whichever was updated most recently
+          if(!cur['Updated At']||new Date(inc['Updated At']||0)>new Date(cur['Updated At'])){
+            Object.assign(cur,inc); merged++;
+          }
+        });
+        setData(tab,mine);
+      });
+      alert('Merged '+merged+' updates from '+(d.by||'colleague'));
+      render();
+    }catch(e){ alert('Could not read that file.'); }
+  };
+  rd.readAsText(f);
+}
+async function resetLocal(){
+  if(!confirm('Clear your local progress and reload the merchant list?'))return;
+  setData('winback',[]); setData('risk',[]);
+  try{localStorage.removeItem('ret2_sent_'+todayKey());}catch(e){}
+  await ensureAugustLoaded(); render();
+}
+
+// ══════════ MODAL ══════════
+function openModal(t,html){document.getElementById('modal-title').textContent=t;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal-overlay').classList.add('open');}
+function closeModal(e){if(e&&e.target!==document.getElementById('modal-overlay')&&e.type==='click'&&e.currentTarget!==e.target)return;document.getElementById('modal-overlay').classList.remove('open');}
+
+// ══════════ LOGIN ══════════
+let signupMode=false;
+function toggleSignup(){
+  signupMode=!signupMode;
+  document.getElementById('li-name-wrap').style.display=signupMode?'block':'none';
+  document.getElementById('li-btn').textContent=signupMode?'Create account':'Sign in';
+  document.getElementById('li-toggle').textContent=signupMode?'Already have an account? Sign in':'First time? Create your account';
+  document.getElementById('li-msg').textContent='';
+}
+function showLogin(msg){
+  document.getElementById('login-screen').style.display='flex';
+  if(msg)document.getElementById('li-msg').textContent=msg;
+}
+async function doLogin(){
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  const msg=document.getElementById('li-msg');
+  if(!email||!pass){msg.textContent='Enter your email and password.';return;}
+  msg.style.color='#888'; msg.textContent=signupMode?'Creating your account…':'Signing in…';
+  const name=signupMode?document.getElementById('li-name').value.trim():'';
+  const res=signupMode?await signUp(email,pass,name):await signIn(email,pass);
+  if(!res.ok){msg.style.color='var(--red)';msg.textContent=res.error;return;}
+  const allowed=await checkAccess();
+  if(!allowed){
+    msg.style.color='var(--red)';
+    msg.textContent='That account is not on the approved list yet. Ask Liy to add '+email+'.';
+    saveToken(null,null); return;
+  }
+  document.getElementById('login-screen').style.display='none';
+  await startApp();
+}
+
+async function startApp(){
+  const ok=await loadFromNeon();
+  if(!ok){ await ensureAugustLoaded(); }   // fall back to the built-in snapshot
+  apiStat(); render();
+}
+
+// ══════════ INIT ══════════
+(async function(){
+  loadToken();
+  myAM=getSettings().myAM||'';
+  if(TOKEN && await checkAccess()){ await startApp(); }
+  else { showLogin(); }
+})();
+</script>
+</body>
+</html>

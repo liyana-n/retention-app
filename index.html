@@ -641,9 +641,10 @@ function prettyName(n){
 }
 function msgFor(r,kind){
   const am=myAM||'your Account Manager', store=prettyName(r['Account Name'])||('Store '+r['Store ID']);
-  if(kind==='churned') return `Hi! This is ${am} from EasyStore 😊 I saw that ${store} has been cancelled.\n\nMind telling me why? Just reply with a number:\n\n1. Too expensive\n2. Missing a feature (which one?)\n3. Hard to use (which part?)\n4. Went to another platform (which one?)\n5. Seasonal — back later\n6. Business closed\n7. Not enough sales\n8. Other\n\nTo come back: Admin > Settings > Manage Billing > Plan Details\n\nAnd if there's anything you'd like to share or talk through, just tell me here — I'm happy to help.`;
-  if(kind==='payment') return `Hi! This is ${am} from EasyStore. I noticed that your subscription renewal payment was unsuccessful, and the system has attempted the renewal twice.\n\nTo avoid any interruption to your store access, kindly retry the payment from your EasyStore admin:\n\nEasyStore Admin > Settings > Manage Billing > Plan Details\n\nIf you prefer another card or payment method, you may update the billing details there as well.\n\nPlease let me know once done, or if you need any help with the renewal payment. 😊`;
-  return `Hi! This is ${am} from EasyStore 😊 Just checking in on ${store} — how's everything going with the store? If there's anything you need help with, or any issues at all, just let me know. Always happy to help!`;
+  // No emoji and no en-dashes below: WhatsApp deep links mangle them into "?" boxes on some phones.
+  if(kind==='churned') return `Hi! This is ${am} from EasyStore. I saw that ${store} has been cancelled.\n\nMind telling me why? Just reply with a number:\n\n1. Too expensive\n2. Missing a feature (which one?)\n3. Hard to use (which part?)\n4. Went to another platform (which one?)\n5. Seasonal, back later\n6. Business closed\n7. Not enough sales\n\nTo come back: Admin > Settings > Manage Billing > Plan Details\n\nAnd if there's anything you'd like to share or talk through, just tell me here. Happy to help.`;
+  if(kind==='payment') return `Hi! This is ${am} from EasyStore. I noticed that your subscription renewal payment was unsuccessful, and the system has attempted the renewal twice.\n\nTo avoid any interruption to your store access, kindly retry the payment from your EasyStore admin:\n\nEasyStore Admin > Settings > Manage Billing > Plan Details\n\nIf you prefer another card or payment method, you may update the billing details there as well.\n\nPlease let me know once done, or if you need any help with the renewal payment.`;
+  return `Hi! This is ${am} from EasyStore. Just checking in on ${store}, how's everything going with the store? If there's anything you need help with, or any issues at all, just let me know. Always happy to help!`;
 }
 function waLink(r,kind){const d=waDigits(r['Phone']);if(!d)return '';return 'https://wa.me/'+d+'?text='+encodeURIComponent(msgFor(r,kind));}
 function gmailLink(r,kind){
@@ -738,7 +739,7 @@ function renderQueue(){
               <div class="qmeta">${x.kind==='churned'
                 ?`Cancelled ${r['Churn Date']||'—'}${r['Segment']?' · Reason: '+segLabel(r['Segment']):''}`
                 :`Active · ${r['Days Since Login']||'?'}d no login${r['Renewal Date']?' · renewal '+r['Renewal Date']:''}`}</div>
-              ${over5?`<div class="offer-note">💡 Internal: cancelled &gt;5 days — eligible for case-by-case 50% offer. Check with lead before offering. Not in the template.</div>`:''}
+              ${over5?`<div class="offer-note">Cancelled ${x.days} days ago</div>`:''}
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 ${contactBtns(r,x.kind==='churned'?'churned':'atrisk')}
                 <button class="btn btn-sm b-sent${isSent?' done':''}" onclick="markSent('${r['ID']}')">${isSent?'✓ Sent':'☑ Mark sent'}</button>
@@ -840,7 +841,7 @@ function renderRisk(){
       ${filterBar('risk',all,'renderRisk','rkSearch',rkSearch,'rk-search')}
       <div class="tbl-wrap"><table>
         <thead><tr><th>Store ID</th><th>Account Name</th><th>Plan</th><th>Why at risk</th><th>Renewal</th><th>Tier</th><th>Contact</th><th>AM</th><th>Notes</th><th></th></tr></thead>
-        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${rkSearch?'🔍':'🟢'}</div><p>${rkSearch?'No results for "'+rkSearch+'"':'No merchants here yet — import from Settings or add via sheet.'}</p></div></td></tr>`:
+        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${rkSearch?'🔍':'🟢'}</div><p>${rkSearch?'No results for "'+rkSearch+'"':'Nobody at risk right now — every merchant on file has already cancelled, so they are all in Recover Churned.'}</p></div></td></tr>`:
         rows.map(r=>`<tr>
           <td>${consoleLink(r['Store ID'])}</td>
           <td><b>${r['Account Name']||'—'}</b>${r._freq?' <span class="chip c-freq">↻</span>':''}</td>
@@ -911,14 +912,7 @@ function markChurned(id){
     <div class="form-group"><label>Why did they cancel? *</label>
       <select id="f-reason" onchange="reasonHint()">
         <option value="">— choose —</option>
-        <option value="price">Price / cost</option>
-        <option value="product">Product gap</option>
-        <option value="usability">Hard to use</option>
-        <option value="competitor">Competitor</option>
-        <option value="seasonal">Seasonal — will be back</option>
-        <option value="closed">Business closed</option>
-        <option value="no-sales">Not generating sales</option>
-        <option value="silent">No reason given</option>
+        ${REASON_OPTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
       </select></div>
     <div class="form-group"><label>MRR lost (RM)</label>
       <input id="f-lost" type="number" min="0" step="1" placeholder="e.g. 249" value="${r['MRR']||''}"></div>
@@ -930,7 +924,39 @@ function markChurned(id){
       <button class="btn btn-navy" onclick="confirmChurned('${id}')">Move to Recover Churned</button>
     </div>`);
 }
+// The seven reasons the merchant can reply with, in the same order as the message.
+const REASON_OPTS=[['price','1 · Too expensive'],['product','2 · Missing a feature'],
+  ['usability','3 · Hard to use'],['competitor','4 · Went to another platform'],
+  ['seasonal','5 · Seasonal, back later'],['closed','6 · Business closed'],
+  ['no-sales','7 · Not enough sales'],['silent','No reply yet']];
 const DETAIL_HINT={product:'Which feature?',usability:'Which part?',competitor:'Which platform?'};
+
+// Log what the merchant actually replied, straight from the Recover Churned list
+function setWBReason(id,val){
+  const rows=getData('winback'); const r=rows.find(x=>x['ID']===id); if(!r)return;
+  r['Segment']=val; r['Updated At']=new Date().toISOString();
+  setData('winback',rows); saveToRemote('winback',r);
+  if(DETAIL_HINT[val]) askDetail('winback',id,DETAIL_HINT[val]);
+  else _rerender('winback','renderWB');
+}
+function askDetail(tab,id,q){
+  const rows=getData(tab); const r=rows.find(x=>x['ID']===id); if(!r)return;
+  const cur=String(r['Churn Reason Detail']||'').replace(/"/g,'&quot;');
+  openModal(q,`
+    <div class="form-group"><label>${q} <span style="color:#888;font-weight:400">(optional)</span></label>
+      <input id="f-rdetail" type="text" value="${cur}" placeholder="Whatever they told you"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal();_rerender('winback','renderWB')">Skip</button>
+      <button class="btn btn-navy" onclick="saveDetail('${tab}','${id}')">Save</button>
+    </div>`);
+}
+function saveDetail(tab,id){
+  const rows=getData(tab); const r=rows.find(x=>x['ID']===id); if(!r)return;
+  const el=document.getElementById('f-rdetail');
+  r['Churn Reason Detail']=el?el.value.trim():'';
+  r['Updated At']=new Date().toISOString();
+  setData(tab,rows); saveToRemote(tab,r); closeModal(); _rerender(tab,tab==='winback'?'renderWB':'renderRisk');
+}
 function reasonHint(){
   const v=document.getElementById('f-reason').value;
   const hint=document.getElementById('detail-hint');
@@ -988,7 +1014,7 @@ function renderWB(){
       ${filterBar('winback',all,'renderWB','wbSearch',wbSearch,'wb-search')}
       <div class="tbl-wrap"><table>
         <thead><tr><th>Store ID</th><th>Account Name</th><th>Plan</th><th>Cancelled</th><th>Days</th><th>Reason</th><th>Contact</th><th>Status</th><th>AM</th><th></th></tr></thead>
-        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${wbSearch?'🔍':'📭'}</div><p>${wbSearch?'No results for "'+wbSearch+'"':'Nothing here yet — run Import in Settings.'}</p></div></td></tr>`:
+        <tbody>${rows.length===0?`<tr><td colspan="10"><div class="empty"><div class="big">${wbSearch?'🔍':'📭'}</div><p>${wbSearch?'No results for "'+wbSearch+'"':'Nothing here yet. Churned merchants arrive automatically from the console sync.'}</p></div></td></tr>`:
         rows.map(r=>{const d=daysSince(r['Churn Date']);const isWon=r['Win-Back Outcome']==='Won back'||r._status==='resubscribed';
         return `<tr ${isWon?'style="background:var(--green-l)"':''}>
           <td>${consoleLink(r['Store ID'])}</td>
@@ -996,7 +1022,9 @@ function renderWB(){
           <td>${r['Plan Type']?`<span class="chip c-plan">${planLabel(r['Plan Type'])}</span>`:'<span style="color:#bbb">—</span>'}</td>
           <td style="font-size:11px">${r['Churn Date']||'—'}</td>
           <td><span class="chip ${d<=90?'c-high':'c-med'}">${d}d</span></td>
-          <td style="font-size:11px">${segLabel(r['Segment'])}</td>
+          <td><select class="select-inline" onchange="setWBReason('${r['ID']}',this.value)">
+            ${REASON_OPTS.map(([v,l])=>`<option value="${v}"${(r['Segment']||'silent')===v?' selected':''}>${l}</option>`).join('')}</select>
+            ${r['Churn Reason Detail']?`<div style="font-size:10px;color:#888;margin-top:2px">${r['Churn Reason Detail']}</div>`:''}</td>
           <td style="white-space:nowrap">${isWon?'<span class="chip c-ok">✓ back</span>':(contactBtns(r,'churned')||'<span style="color:#bbb;font-size:11px">no contact</span>')}</td>
           <td><select class="select-inline" onchange="updRow('winback','${r['ID']}','Outreach Status',this.value)">
             ${[['not-started','Not started'],['email-sent','Contacted'],['call-booked','Call booked'],['no-response','No response'],['declined','Declined']].map(([v,l])=>`<option value="${v}"${r['Outreach Status']===v?' selected':''}>${l}</option>`).join('')}</select></td>
@@ -1062,7 +1090,7 @@ function delEsc(id){if(!confirm('Delete?'))return;setData('escalations',getData(
 // ══════════ TEMPLATES ══════════
 function renderTmpl(){
   document.getElementById('page').innerHTML=`
-    <div class="alert alert-blue">Templates auto-personalise with [Store Name] + your AM name and auto-pick by situation: churned → 1, failed payment → 2, at-risk → 3. The 50% offer is never written — case-by-case with lead approval only.</div>
+    <div class="alert alert-blue">Templates auto-personalise with [Store Name] + your AM name and auto-pick by situation: churned → 1, failed payment → 2, at-risk → 3. No discounts or offers are ever written into a message.</div>
     <div class="section"><div class="section-head"><h3>What their reply number means</h3></div>
       <div class="section-body" style="padding:12px 18px"><table style="min-width:0"><thead><tr><th>They reply</th><th>Log it as</th></tr></thead><tbody>
         <tr><td>1</td><td>Price / cost</td></tr>
